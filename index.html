@@ -110,6 +110,27 @@
     .app{grid-template-columns:1fr;grid-template-rows:auto 1fr auto;height:100dvh;}
     aside.side{max-height:36vh;border-left:0;border-top:1px solid rgba(255,255,255,.07);}
   }
+  /* ============ 主题（默认原版，零改动） ============ */
+  html[data-bt="night"] body .app{ filter: invert(.9) hue-rotate(180deg); }
+  html[data-bt="night"] body{ background:#0b0b0c; }
+  html[data-bt="sepia"] body{ background:#3d2f1e; }
+  html[data-bt="green"] body{ background:#15251a; }
+  #themeTint{ position:fixed; inset:0; pointer-events:none; z-index:99999; display:none; }
+  html[data-bt="sepia"] #themeTint{ display:block; background:rgba(255,178,92,.16); mix-blend-mode:multiply; }
+  html[data-bt="green"] #themeTint{ display:block; background:rgba(140,205,150,.18); mix-blend-mode:multiply; }
+  /* ============ AI 分析面板 ============ */
+  #aiBody .row{display:flex;justify-content:space-between;gap:8px;margin:3px 0;font-size:12px;}
+  #aiBody .row .k{color:var(--dim);}
+  #aiBody .kw{display:inline-block;font-size:11px;padding:1px 7px;margin:2px 3px 2px 0;border-radius:9px;
+    background:rgba(216,162,74,.14);color:var(--accent);}
+  #aiBody textarea{width:100%;box-sizing:border-box;background:rgba(255,255,255,.05);color:var(--fg);
+    border:1px solid rgba(255,255,255,.14);border-radius:6px;font-size:11px;padding:5px 7px;font-family:inherit;}
+  #aiBody input{width:100%;box-sizing:border-box;background:rgba(255,255,255,.05);color:var(--fg);
+    border:1px solid rgba(255,255,255,.14);border-radius:6px;font-size:11px;padding:4px 7px;margin:2px 0 6px;}
+  #aiOut{font-size:12px;line-height:1.65;white-space:pre-wrap;word-break:break-word;margin-top:8px;
+    color:var(--fg);max-height:340px;overflow:auto;}
+  #aiOut.err{color:var(--bad);}
+  #aiBody .sec{margin-top:10px;padding-top:8px;border-top:1px dashed rgba(255,255,255,.12);}
 </style>
 </head>
 <body>
@@ -2506,21 +2527,16 @@ function pdfjsRenderPage(pageNo, target){
   PDFJS_QUEUE = p.catch(()=>{});
   return p;
 }
-/* 原版 decodePageImage 不认识 kind:"pdfjs"：包一层，pdfjs 页走 pdfjsRenderPage */
-if(typeof window.decodePageImage === "function"){
-  window.decodePageImage = (function(_orig){
-    return function(key, d, target){
-      if(d && d.kind === "pdfjs") return pdfjsRenderPage(d.page, target);
-      return _orig(key, d, target);
-    };
-  })(window.decodePageImage);
-}
+/* 注意：decodePageImage 的 pdfjs 分支接线放在文件末尾补丁块 ——
+   此处主程序尚未执行，window.decodePageImage 还不存在，包装会静默失效。 */
 </script>
 
 <div class="app">
   <header class="top">
     <div class="brand"><b>书口</b><span id="docTitle">把「厚度」还给电子书 · 双页跨页原型</span></div>
     <div class="spacer"></div>
+    <button class="btn" id="btnAI">AI 分析</button>
+    <button class="btn" id="btnTheme">主题：原版</button>
     <button class="btn pri" id="btnImport">导入文档</button>
     <input type="file" id="file" accept=".txt,.md,.markdown,.text,.html,.htm,.xhtml,.epub,.pdf" style="display:none">
     <div class="seg" id="seg">
@@ -2532,10 +2548,26 @@ if(typeof window.decodePageImage === "function"){
   <main class="stage" id="stage">
     <canvas id="cv"></canvas>
     <div class="hint" id="hint">拖动左右书口翻页 · 点书口上的章带跳到那一章 · 拖入文件可导入</div>
-    <div class="drop" id="drop">松手导入 · TXT / Markdown / HTML / EPUB</div>
+    <div class="drop" id="drop">松手导入 · TXT / Markdown / HTML / EPUB / PDF</div>
   </main>
 
   <aside class="side">
+    <div class="panel" id="aiPanel" style="display:none">
+      <h3>AI 分析 <em id="aiMeta">本机统计</em></h3>
+      <div class="body" id="aiBody">
+        <div class="btns">
+          <button id="btnAiLocal">本机分析</button>
+          <button id="btnAiLlm">AI 深度分析</button>
+        </div>
+        <div id="aiOut">点「本机分析」看全书的结构统计与关键词；配置模型后可点「AI 深度分析」。</div>
+        <div class="sec">
+          <div class="note" style="margin-bottom:4px">模型设置（OpenAI 兼容接口，保存在本机）</div>
+          <input id="aiBase" placeholder="API 地址，如 https://api.xxx.com/v1">
+          <input id="aiKey" type="password" placeholder="API Key（可选，仅存本机）">
+          <input id="aiModel" placeholder="模型名，如 glm-4-flash / gpt-4o-mini">
+        </div>
+      </div>
+    </div>
     <div class="panel">
       <h3>翻页 <em id="pSheet">第 1 张 / 160</em></h3>
       <div class="body">
@@ -4500,7 +4532,7 @@ if(typeof window.parsePdf === "function"){
         if(marks.length >= 2){
           for(let i=0;i<marks.length;i++){
             const from=marks[i].page, to=(i+1<marks.length?marks[i+1].page:n);
-            chapters.push({ t:(marks[i].title||"").replace(/\s+/g," ").trim().slice(0,40)||("第 "+(i+1)+" 节"),
+            chapters.push({ t:((marks[i].title||"").replace(/\s*\/\s*\d+\s*$/,"").replace(/\s+/g," ").trim().slice(0,40))||("第 "+(i+1)+" 节"),
                             p:"", imgPages:Array.from({length:Math.max(1,to-from)},(_,k)=>desc(from+k)) });
           }
         }else{
@@ -4510,6 +4542,7 @@ if(typeof window.parsePdf === "function"){
                             imgPages:Array.from({length:Math.min(PER,n-p)},(_,k)=>desc(p+k)) });
         }
         PDFJS.buf = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+        PDFJS.boot = null; PDFJS.doc = null;   // 换书必须重建文档，否则渲染的还是上一本
         pdfjsBoot().catch(function(){});
         const title = (meta && meta.info && meta.info.title || "").replace(/\s+/g," ").trim().slice(0,40) || null;
         const note = "原版页面模式 · 按原始版面渲染"+n+" 页"
@@ -4522,17 +4555,179 @@ if(typeof window.parsePdf === "function"){
     };
   })(window.parsePdf);
 }
-/* pdfjs 矢量页没有原图分辨率上限：覆盖 imgTargetFor 放行（原版函数对扫描页封顶逻辑保留） */
-if(typeof window.imgTargetFor === "function" && typeof PDFJS !== "undefined"){
-  window.imgTargetFor = (function(_orig){
-    return function(idx){
-      const d = book.imgPages && book.imgPages.get(idx);
-      if(d && d.kind === "pdfjs") return imgTargetW();
-      return _orig(idx);
+/* pdfjs 矢量页解码接线：原版 decodePageImage 只认 jpeg/raw，这里补 pdfjs 分支。
+   必须放在主程序之后（此时 window.decodePageImage 才存在）。 */
+if(typeof window.decodePageImage === "function" && typeof pdfjsRenderPage === "function"){
+  window.decodePageImage = (function(_orig){
+    return function(idx, d, target){
+      if(d && d.kind === "pdfjs") return pdfjsRenderPage(d.page, target);
+      return _orig(idx, d);
     };
-  })(window.imgTargetFor);
+  })(window.decodePageImage);
+  window.decodePageImage.__pdfjsWrap = true;
 }
+
+/* ==================== 主题设置（默认原版，不碰原版样式） ==================== */
+(function(){
+  const THEMES = [
+    { id:"orig",  name:"原版" },
+    { id:"night", name:"夜间" },
+    { id:"sepia", name:"羊皮纸" },
+    { id:"green", name:"护眼" }
+  ];
+  const KEY = "bk.theme";
+  const btn = document.getElementById("btnTheme");
+  const de = document.documentElement;
+  if(!btn || !de || !de.dataset) return;   // 测试桩/极简环境跳过
+  let cur = "orig";
+  try{ const s = localStorage.getItem(KEY); if(THEMES.some(t=>t.id===s)) cur = s; }catch(_){}
+  function apply(id){
+    cur = id;
+    if(id==="orig") delete document.documentElement.dataset.bt;
+    else document.documentElement.dataset.bt = id;
+    btn.textContent = "主题：" + (THEMES.find(t=>t.id===id)||THEMES[0]).name;
+    try{ localStorage.setItem(KEY, id); }catch(_){}
+  }
+  btn.addEventListener("click", ()=>{
+    const i = THEMES.findIndex(t=>t.id===cur);
+    apply(THEMES[(i+1)%THEMES.length].id);
+  });
+  window.__themeNext = ()=>btn.dispatchEvent(new Event("click"));
+  window.__themeCurrent = ()=>cur;
+  apply(cur);
+})();
+
+/* ==================== AI 分析（本机统计 + 可选 OpenAI 兼容模型） ==================== */
+(function(){
+  const $ = id => document.getElementById(id);
+  const panel = $("aiPanel"), out = $("aiOut");
+  if(!panel || !out || !$("btnAI") || !$("btnAiLocal") || !$("btnAiLlm")) return;   // 测试桩跳过
+  const LSK = { base:"bk.ai.base", key:"bk.ai.key", model:"bk.ai.model" };
+  ["base","key","model"].forEach(k=>{
+    $( "ai"+k[0].toUpperCase()+k.slice(1) ).value = (()=>{ try{ return localStorage.getItem(LSK[k])||""; }catch(_){ return ""; } })();
+  });
+  function saveCfg(){
+    try{
+      localStorage.setItem(LSK.base, $("aiBase").value.trim());
+      localStorage.setItem(LSK.key,  $("aiKey").value.trim());
+      localStorage.setItem(LSK.model,$("aiModel").value.trim());
+    }catch(_){}
+  }
+  $("btnAI").addEventListener("click", ()=>{
+    const show = panel.style.display === "none";
+    panel.style.display = show ? "" : "none";
+    if(show && out.dataset.dirty !== "1") aiLocal();
+  });
+
+  /* ---- 本机统计 ---- */
+  function chapterText(c){
+    return (c.blocks||[]).map(b=>{
+      if(b.runs) return b.runs.map(r=>r.t||"").join("");
+      if(b.lines) return b.lines.join("");
+      if(b.fig) return "";
+      return "";
+    }).join("");
+  }
+  function keywords(text, topn){
+    const stop = new Set(("的一个是我们不了在有了就和人们都到说要会在这也可无对之很去说来说对于没"+ 
+      "什么这个那个以及因此所以但是如果那么还有通过可以这样那样以及关于由于其实而且并且或者").split(""));
+    const freq = new Map();
+    const s = text.replace(/[^\u4e00-\u9fa5A-Za-z]+/g, " ");
+    const tokens = s.split(/\s+/);
+    for(const w of tokens){
+      if(w.length<=1) continue;
+      if(/^[A-Za-z]{2,}$/.test(w)){ freq.set(w,(freq.get(w)||0)+1); continue; }
+      for(let i=0;i+2<=w.length;i++){
+        const g = w.slice(i,i+2);
+        if(stop.has(g[0]) && stop.has(g[1])) continue;
+        freq.set(g,(freq.get(g)||0)+1);
+      }
+    }
+    return [...freq.entries()].filter(e=>e[1]>=3).sort((a,b)=>b[1]-a[1]).slice(0,topn);
+  }
+  function aiLocal(){
+    const chs = book.chaps||[];
+    const texts = chs.map(chapterText);
+    const counts = texts.map(t=>t.replace(/\s/g,"").length);
+    const total = counts.reduce((a,b)=>a+b,0);
+    const minutes = Math.round(total/300);
+    const hrs = minutes>=90 ? (minutes/60).toFixed(1)+" 小时" : minutes+" 分钟";
+    const kw = keywords(texts.join(""), 12);
+    const longest = counts.indexOf(Math.max(...counts));
+    const rows = chs.map((c,i)=>({ t:c.t||("第"+(i+1)+"章"), n:counts[i] }));
+    const top = rows.slice().sort((a,b)=>b.n-a.n).slice(0,5);
+    const pct = book.sheets ? ((state.sheet/(book.sheets-1))*100) : 0;
+    out.classList.remove("err");
+    out.innerHTML =
+      '<div class="row"><span class="k">书名</span><span>' + esc(book.title||"未命名") + '</span></div>'
+      + '<div class="row"><span class="k">章节 / 页数</span><span>' + chs.length + ' 章 / ' + book.pages + ' 页</span></div>'
+      + '<div class="row"><span class="k">总字数</span><span>约 ' + total.toLocaleString() + ' 字</span></div>'
+      + '<div class="row"><span class="k">预计读完</span><span>' + hrs + '（300 字/分）</span></div>'
+      + '<div class="row"><span class="k">当前进度</span><span>' + pct.toFixed(1) + '%</span></div>'
+      + '<div class="row"><span class="k">最长章节</span><span>' + esc(rows[longest].t.slice(0,18)) + '（' + counts[longest].toLocaleString() + ' 字）</span></div>'
+      + '<div class="sec"><div class="note">全书关键词</div>'
+      + kw.map(k=>'<span class="kw">'+esc(k[0])+'×'+k[1]+'</span>').join("") + '</div>'
+      + '<div class="sec"><div class="note">篇幅 Top5 章节</div>'
+      + top.map(r=>'<div class="row"><span class="k">'+esc(r.t.slice(0,20))+'</span><span>'+r.n.toLocaleString()+' 字</span></div>').join("")
+      + '</div>';
+    out.dataset.dirty = "1";
+    $("aiMeta").textContent = "本机统计";
+  }
+  function esc(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+  /* ---- AI 深度分析（OpenAI 兼容 /chat/completions） ---- */
+  function cfg(){
+    return { base: $("aiBase").value.trim().replace(/\/+$/,""),
+             key:  $("aiKey").value.trim(),
+             model:$("aiModel").value.trim() };
+  }
+  async function aiLlm(){
+    saveCfg();
+    const c = cfg();
+    if(!c.base || !c.model){
+      out.classList.add("err");
+      out.textContent = "请先填 API 地址与模型名（OpenAI 兼容接口）。只看统计可点「本机分析」。";
+      return;
+    }
+    out.classList.remove("err");
+    out.textContent = "正在请求模型 …";
+    $("btnAiLlm").disabled = true;
+    try{
+      const chs = book.chaps||[];
+      const outline = chs.map((ch,i)=>(i+1)+". "+(ch.t||"")).join("\n").slice(0,1800);
+      let sample = "";
+      for(let i=0;i<chs.length && sample.length<6000;i+=Math.max(1,Math.floor(chs.length/12))){
+        sample += "\n【"+(chs[i].t||("第"+(i+1)+"章"))+"】\n"+chapterText(chs[i]).slice(0,400)+"\n";
+      }
+      const prompt = "你是一位读书助手。下面是一本书的书名、章节目录和部分章节摘录。"
+        + "请用中文输出：1) 全书主题与定位（2-3 句）；2) 结构分析（章节组织特点）；"
+        + "3) 3-5 个核心概念关键词及一句话解释；4) 给读者的阅读建议（先读什么、重点在哪）。\n\n"
+        + "书名：" + (book.title||"未命名") + "\n\n目录：\n" + outline + "\n\n摘录：" + sample;
+      const res = await fetch(c.base + "/chat/completions", {
+        method:"POST",
+        headers: Object.assign({ "Content-Type":"application/json" }, c.key ? { "Authorization":"Bearer "+c.key } : {}),
+        body: JSON.stringify({ model: c.model,
+          messages: [{ role:"user", content: prompt }], temperature: 0.4 })
+      });
+      if(!res.ok) throw new Error("HTTP " + res.status + " " + (await res.text()).slice(0,200));
+      const data = await res.json();
+      const msg = data.choices && data.choices[0] && data.choices[0].message;
+      const txt = (msg && (msg.content||"")) || "(模型没有返回内容)";
+      out.innerHTML = esc(String(txt).slice(0, 8000));
+      out.dataset.dirty = "1";
+      $("aiMeta").textContent = "模型：" + c.model;
+    }catch(e){
+      out.classList.add("err");
+      out.textContent = "AI 分析失败：" + (e && e.message ? e.message : e);
+    }finally{
+      $("btnAiLlm").disabled = false;
+    }
+  }
+  $("btnAiLocal").addEventListener("click", aiLocal);
+  $("btnAiLlm").addEventListener("click", aiLlm);
+})();
 </script>
 
+<div id="themeTint"></div>
 </body>
 </html>

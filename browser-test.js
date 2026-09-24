@@ -41,7 +41,7 @@ try {
     "--disable-crash-reporter", "--user-data-dir=" + path.join(WORK, "ud"),
     "--allow-file-access-from-files", "--window-size=1400,900", "--hide-scrollbars",
     "--enable-logging=stderr", "--v=0",
-    "--virtual-time-budget=15000", "--screenshot=" + path.join(WORK, "shot.png"), page
+    "--virtual-time-budget=120000", "--screenshot=" + path.join(WORK, "shot.png"), page
   ], { stdio: ["ignore", fd, fd], timeout: 180000 });
 } catch (e) { /* 忽略 */ }
 fs.closeSync(fd);
@@ -86,6 +86,22 @@ ok("右书口章带可见（有金色色带像素）",
   `ink=${R.bandVisible && R.bandVisible.ink}, maxd=${R.bandVisible && R.bandVisible.maxd}`);
 ok("文件选择器已接受 PDF", /\.pdf/.test(R.accept), R.accept);
 
-fs.rmSync(WORK, { recursive: true, force: true });
+console.log("\n[D] PDF 渲染接线");
+ok("parsePdf 已接 pdfjs 内核", R.wiring && R.wiring.parsePdfPatched === true);
+ok("decodePageImage 已补 pdfjs 分支", R.wiring && R.wiring.decodePdfjs === true);
+ok("pdfjsRenderPage 可用", R.wiring && R.wiring.pdfjsRenderPage === true);
+ok("PDF 端到端：导入成功且走图像页管线",
+  R.pdfE2E && R.pdfE2E.source === "probe.pdf" && R.pdfE2E.imgPages === 2,
+  JSON.stringify(R.pdfE2E));
+ok("PDF 端到端：pdf.js 真实渲染出页面", R.pdfE2E && R.pdfE2E.rendered === true);
+
+console.log("\n[E] 主题与 AI 面板");
+ok("主题按钮循环切换并回到原版", R.theme && R.theme.cycleOk === true,
+  R.theme ? `${R.theme.label0} → ${R.theme.label1} → ${R.theme.backTo}` : "无数据");
+ok("AI 面板可展开", R.ai && R.ai.panelShown === true);
+ok("AI 本机分析出统计与关键词", R.ai && R.ai.statsReady === true);
+
+if (!fail) fs.rmSync(WORK, { recursive: true, force: true });
+else console.log("  [browser] 有失败项，现场保留于 _browser/（chrome.log / shot.png）");
 console.log(`\n===== ${pass} passed, ${fail} failed =====`);
 process.exitCode = fail ? 1 : 0;

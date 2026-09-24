@@ -1,6 +1,7 @@
 /* 浏览器探针（原版兼容版）：只测原版拥有的功能
-   翻页（按钮/滚轮）、章带跳转、厚度守恒、渲染清晰度、章带可见性 */
-(function(){
+   翻页（按钮/滚轮）、章带跳转、厚度守恒、渲染清晰度、章带可见性
+   + 主题切换、AI 面板、PDF 端到端导入（合成 mini PDF → parsePdf → pdf.js 渲染） */
+(async function(){
   let R = {};
   function report(){
     try { console.log("PROBEJSON " + JSON.stringify(R)); }
@@ -56,6 +57,13 @@
   }
   R.env = { dpr: DPR, win: innerWidth + "×" + innerHeight, canvasPx: cv.width + "×" + cv.height };
 
+  /* 接线检查：parsePdf 已被补丁包裹、decodePageImage 有 pdfjs 分支 */
+  R.wiring = {
+    parsePdfPatched: typeof parsePdf === "function" && String(parsePdf).indexOf("pdfjsBoot") >= 0,
+    decodePdfjs: !!(window.decodePageImage && window.decodePageImage.__pdfjsWrap),
+    pdfjsRenderPage: typeof pdfjsRenderPage === "function"
+  };
+
   /* 翻页：按钮 */
   const prev = document.getElementById("btnPrev"), next = document.getElementById("btnNext");
   settle(50); draw();
@@ -99,6 +107,88 @@
 
   /* 文件选择器 */
   R.accept = document.getElementById("file").accept;
+
+  /* ---------- 主题 ---------- */
+  const tbtn = document.getElementById("btnTheme");
+  R.theme = { hasBtn: !!tbtn };
+  if (tbtn) {
+    R.theme.label0 = tbtn.textContent;
+    R.theme.attr0 = document.documentElement.dataset.bt || "orig";
+    tbtn.click();
+    R.theme.label1 = tbtn.textContent;
+    R.theme.attr1 = document.documentElement.dataset.bt || "orig";
+    tbtn.click(); tbtn.click(); tbtn.click();          // 转回原版
+    R.theme.backTo = document.documentElement.dataset.bt || "orig";
+    R.theme.cycleOk = R.theme.label0 !== R.theme.label1 && R.theme.backTo === "orig";
+  }
+
+  /* ---------- AI 面板 ---------- */
+  const abtn = document.getElementById("btnAI"), apanel = document.getElementById("aiPanel");
+  const aout = document.getElementById("aiOut"), albtn = document.getElementById("btnAiLocal");
+  R.ai = { hasBtn: !!abtn && !!apanel };
+  if (abtn && apanel && albtn) {
+    abtn.click();
+    R.ai.panelShown = apanel.style.display !== "none";
+    albtn.click();
+    const txt = aout.textContent || "";
+    R.ai.statsReady = txt.indexOf("总字数") >= 0 && txt.indexOf("章") >= 0;
+    abtn.click();                                      // 收起
+  }
+
+  /* ---------- PDF 端到端：合成 mini PDF → importFile → pdf.js 渲染 ---------- */
+  function buildMiniPdf(){
+    const objs = [];
+    objs[1] = "<< /Type /Catalog /Pages 2 0 R >>";
+    objs[2] = "<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>";
+    objs[3] = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 5 0 R /Resources << /Font << /F1 6 0 R >> >> >>";
+    objs[4] = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 7 0 R /Resources << /Font << /F1 6 0 R >> >> >>";
+    objs[5] = { stream: "BT /F1 24 Tf 72 720 Td (Hello Book Probe) Tj ET" };
+    objs[6] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>";
+    objs[7] = { stream: "BT /F1 24 Tf 72 720 Td (Page Two 123) Tj ET" };
+    let out = "%PDF-1.4\n"; const off = [];
+    for (let i = 1; i <= 7; i++){
+      off[i] = out.length;
+      const o = objs[i];
+      if (typeof o === "object") out += i + " 0 obj\n<< /Length " + o.stream.length + " >>\nstream\n" + o.stream + "\nendstream\nendobj\n";
+      else out += i + " 0 obj\n" + o + "\nendobj\n";
+    }
+    const xr = out.length;
+    out += "xref\n0 8\n0000000000 65535 f \n";
+    for (let i = 1; i <= 7; i++) out += String(off[i]).padStart(10, "0") + " 00000 n \n";
+    out += "trailer\n<< /Size 8 /Root 1 0 R >>\nstartxref\n" + xr + "\n%%EOF";
+    const u8 = new Uint8Array(out.length);
+    for (let i = 0; i < out.length; i++) u8[i] = out.charCodeAt(i) & 0xff;
+    return u8;
+  }
+  try {
+    /* 虚拟时间快进下，pdf.js 的 blob worker 在独立线程跑真实计算，永远赶不上
+       虚拟时钟（hasDoc 一直 false）。临时禁用 Worker 强制走主线程 fake worker，
+       其任务受虚拟时间调度器约束 —— 只影响本探针，不影响真实浏览器。 */
+    const _RealWorker = window.Worker;
+    try { window.Worker = undefined; } catch(_){}
+    try {
+    const u8 = buildMiniPdf();
+    await importFile(new File([u8], "probe.pdf"));
+    R.pdfE2E = { source: book.source, chapters: book.chaps.length,
+                 pages: book.pages, imgPages: book.imgPages ? book.imgPages.size : 0 };
+    // 等第一页真正渲染进 IMG_CACHE
+    let rendered = false, cacheErr = null;
+    for (let t = 0; t < 120; t++){
+      await new Promise(r => setTimeout(r, 100));
+      for (const v of IMG_CACHE.values()){
+        if (v && v.width) { rendered = true; break; }
+        if (v && v.error && !cacheErr) cacheErr = v.error;
+      }
+      if (rendered) break;
+    }
+    R.pdfE2E.rendered = rendered;
+    if (cacheErr) R.pdfE2E.cacheErr = cacheErr;
+    if (typeof PDFJS !== "undefined") R.pdfE2E.hasDoc = !!(PDFJS.doc);
+    } finally { try { window.Worker = _RealWorker; } catch(_){} }
+  } catch(e) {
+    R.pdfE2E = { error: String(e && e.message || e) };
+  }
+
   } catch(e){
     R.fatal = (e && e.stack) ? String(e.stack).split(/\r?\n/).slice(0,4).join(" | ") : String(e);
   }
