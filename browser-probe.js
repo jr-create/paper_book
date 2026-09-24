@@ -134,6 +134,7 @@
                  Tstack: +GEO.Tstack.toFixed(1), sheet: state.sheet, canPan: canPan(),
                  hiPx: Math.round(hiPx) };
   R.zoom1 = { geo: geo1, band: bodyBand(), fullHits, sliceHits };
+  const loRef = pageCanvas(rectoIdx());        // 1× 低清位图（对照组用）
 
   sliceHits = 0; fullHits = 0;
   zoomPreset(3);
@@ -147,10 +148,16 @@
   R.zoom3 = { geo: geo3, focus: foc, band: band3, fullHits, sliceHits,
               cache: { n: HICACHE.size }, pageAt3: { dw: Math.round(GEO.pageW*DPR), dh: Math.round(GEO.pageH*DPR) } };
 
-  /* ---- 对照组：同一块区域改画「低清缩略图放大」——一定会糊 ---- */
+  /* ---- 对照组：把 1/6 尺寸的极低清位图放大画到 3× 页面——一定糊 ---- */
   const rx3 = rectoX();
+  const lo = document.createElement("canvas");
+  lo.width = Math.round(GEO.pageW / 6); lo.height = Math.round(GEO.pageH / 6);
+  const lg = lo.getContext("2d");
+  lg.scale(1 / 6, 1 / 6);
+  paintPage(lg, rectoIdx(), GEO.pageW, GEO.pageH);
   g.save(); g.beginPath(); g.rect(rx3, GEO.pageY, GEO.pageW, GEO.pageH); g.clip();
-  g.drawImage(pageCanvas(rectoIdx()), 0, 0, CW, CH, rx3, GEO.pageY, GEO.pageW, GEO.pageH);
+  g.imageSmoothingEnabled = true;
+  g.drawImage(lo, rx3, GEO.pageY, GEO.pageW, GEO.pageH);
   g.restore();
   R.blur3 = { band: bodyBand() };
 

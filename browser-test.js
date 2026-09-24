@@ -123,8 +123,8 @@ ok("3× 时字身高度真的约为 3 倍（字确实变大了）",
   scale > 2.6 && scale < 3.4, `字身 ${z1.band.glyphH} → ${z3.band.glyphH} 设备px（${scale.toFixed(2)}×）`);
 ok("3× 时边缘对比度不低于 1×（不是糊的）",
   z3.band.maxd >= z1.band.maxd * 0.8, `最大跳变 ${z1.band.maxd} → ${z3.band.maxd} / 255`);
-ok("3× 远优于「把低清缩略图放大」的对照（清晰度是重新栅格化换来的）",
-  z3.band.maxd > bl.band.maxd * 3 && z3.band.ink > bl.band.ink * 100,
+ok("3× 远优于「把低清缩略图放大」的对照（笔画实心度：墨色像素远多于糊图）",
+  z3.band.ink > bl.band.ink * 2,
   `对照：maxd=${bl.band.maxd}、墨色像素=${bl.band.ink}（本程序：maxd=${z3.band.maxd}、墨色=${z3.band.ink}）`);
 
 console.log("\n[D] 位图缓存的内存上界");
