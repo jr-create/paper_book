@@ -14,3 +14,8 @@ node_modules/
 # 系统
 Thumbs.db
 desktop.ini
+
+# 会话/调试产物补充
+_shotv/
+_sess_*.jsonl
+.workbuddy/
