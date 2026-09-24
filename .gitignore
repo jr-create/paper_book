@@ -1,0 +1,16 @@
+# 临时与调试产物
+_*.js
+_*.html
+_*.bak
+_*.pdf
+_rendertest/
+_algofig/
+_browser/
+_wt/
+
+# Node
+node_modules/
+
+# 系统
+Thumbs.db
+desktop.ini
