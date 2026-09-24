@@ -60,54 +60,71 @@ function drawPageAt(idx, x, y, w, h) {
 
 /* --------------------- 书脊 / 纸叠 / 章带 --------------------- */
 function drawSpine() {
-  const g = ctx.createLinearGradient(GEO.pageX + GEO.pageW - GEO.gutter * 0.5, 0, GEO.pageX + GEO.pageW + GEO.gutter * 1.1, 0);
-  g.addColorStop(0, "rgba(60,50,38,.30)");
-  g.addColorStop(0.5, "rgba(60,50,38,.10)");
-  g.addColorStop(1, "rgba(60,50,38,.26)");
+  const g = ctx.createLinearGradient(GEO.pageX + GEO.pageW - GEO.gutter * 0.4, 0, GEO.pageX + GEO.pageW + GEO.gutter, 0);
+  g.addColorStop(0, "rgba(60,50,38,.38)");
+  g.addColorStop(0.5, "rgba(60,50,38,.12)");
+  g.addColorStop(1, "rgba(60,50,38,.32)");
   ctx.fillStyle = g;
-  ctx.fillRect(GEO.pageX + GEO.pageW - GEO.gutter * 0.5, GEO.pageY, GEO.gutter * 1.6, GEO.pageH);
+  ctx.fillRect(GEO.pageX + GEO.pageW - GEO.gutter * 0.4, GEO.pageY, GEO.gutter * 1.4, GEO.pageH);
 }
-/* 纸叠：页面外侧的「已读/未读」纸堆——层状线条 + 侧边渐变，纸的厚度感 */
+/* 纸叠：已读/未读纸堆——细密纸页线（原版观感：一层层纸张边缘） */
 function drawStack(x, y, w, h, isRead) {
   if (w < 0.5) return;
   const g = ctx;
   g.save();
-  // 纸叠基底
+  // 纸叠基底：外深内浅（靠近书页最亮）
   const grad = g.createLinearGradient(x, 0, x + w, 0);
-  if (isRead) { grad.addColorStop(0, "#f4ecd9"); grad.addColorStop(1, "#c9bda0"); }
-  else        { grad.addColorStop(0, "#cfc4a8"); grad.addColorStop(1, "#f4ecd9"); }
+  if (isRead) { grad.addColorStop(0, "#b9ad8e"); grad.addColorStop(1, "#f2ead6"); }
+  else        { grad.addColorStop(0, "#f2ead6"); grad.addColorStop(1, "#b9ad8e"); }
   g.fillStyle = grad;
   g.fillRect(x, y, w, h);
-  // 层状纸页线
-  g.fillStyle = "rgba(120,105,80,.22)";
-  const n = clamp(Math.round(w / 2.2), 6, 46);
+  // 细密纸页线：每条 ≈ 2.2px 间距，微微歪斜模拟真实纸张
+  g.strokeStyle = "rgba(120,105,80,.30)";
+  g.lineWidth = 0.7;
+  const n = clamp(Math.round(w / 2.2), 8, 90);
   for (let i = 1; i < n; i++) {
     const xx = x + w * i / n;
-    g.fillRect(xx, y + 2, 0.7, h - 4);
+    const wob = Math.sin(i * 12.9898) * 0.6;          // 伪随机歪斜
+    g.beginPath();
+    g.moveTo(xx, y + 1 + wob * 0.2);
+    g.lineTo(xx + wob, y + h - 1 - wob * 0.2);
+    g.stroke();
   }
-  // 外缘阴影
-  const edge = g.createLinearGradient(isRead ? x : x + w - 3, 0, isRead ? x + 3 : x + w, 0);
-  edge.addColorStop(0, "rgba(60,50,38,.25)");
-  edge.addColorStop(1, "rgba(60,50,38,0)");
-  g.fillStyle = edge;
-  g.fillRect(isRead ? x : x + w - 3, y, 3, h);
+  // 顶/底缘暗一点（书口弧面）
+  const cap = g.createLinearGradient(0, y, 0, y + h);
+  cap.addColorStop(0, "rgba(60,50,38,.18)");
+  cap.addColorStop(0.08, "rgba(60,50,38,0)");
+  cap.addColorStop(0.92, "rgba(60,50,38,0)");
+  cap.addColorStop(1, "rgba(60,50,38,.18)");
+  g.fillStyle = cap;
+  g.fillRect(x, y, w, h);
   g.restore();
 }
 function drawFan() {
   if (!book.chaps.length) return;
-  // 章带画在纸叠侧缘内（宽度与纸叠一致，避免伸出纸叠外的色块）
+  // 章带画在纸叠侧缘内（宽度与纸叠一致），每章一色带 + 章号数字（原版样式）
   const w = Math.max(3, Math.min(GEO.leftWBase, GEO.rightWBase) - 2);
   const cur = bandAt(GEO.pageX - 1, GEO.pageY + GEO.pageH / 2);
+  ctx.save();
+  ctx.font = `600 ${Math.max(8, w * 0.34)}px ui-monospace,Menlo,Consolas,monospace`;
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
   book.chaps.forEach((C, i) => {
     const y0 = GEO.pageY + GEO.pageH * (C.start / Math.max(1, book.pages));
     const y1 = GEO.pageY + GEO.pageH * ((C.start + C.pages) / Math.max(1, book.pages));
+    const h = y1 - y0;
     // 已读章在左书口，未读章在右书口（与 stackX 同一几何）
     const readSide = (C.start + C.pages) <= state.sheetF * 2 + 1;
     const x = readSide ? GEO.pageX - w : rectoRight() + 2;
     ctx.fillStyle = (cur && i === cur.chapter) ? "rgba(224,180,106,.95)"
-      : (i % 2 ? "rgba(160,138,100,.75)" : "rgba(190,166,120,.75)");
-    ctx.fillRect(x, y0 + 0.5, w - 1, Math.max(1, y1 - y0 - 1));
+      : (i % 2 ? "rgba(168,146,106,.8)" : "rgba(196,174,128,.8)");
+    ctx.fillRect(x, y0 + 0.5, w - 1, Math.max(1, h - 1));
+    // 章号：章带足够高时画在带中央（原版：书口上有章号）
+    if (h > w * 1.1) {
+      ctx.fillStyle = "rgba(45,36,24,.85)";
+      ctx.fillText(String(i + 1), x + (w - 1) / 2, y0 + h / 2);
+    }
   });
+  ctx.restore();
   state.fan.bands = book.chaps.length;
 }
 function drawBoardEdges() {
@@ -133,13 +150,20 @@ function draw() {
   desk.addColorStop(1, "#241f18");
   g.fillStyle = desk;
   g.fillRect(0, 0, GEO.W, GEO.H);
+  // 桌面顶部书架横条（原版：上方深木条）
+  const shelfH = Math.max(14, GEO.H * 0.028);
+  const shelf = g.createLinearGradient(0, 0, 0, shelfH);
+  shelf.addColorStop(0, "#4a3d2c");
+  shelf.addColorStop(1, "#2b2318");
+  g.fillStyle = shelf;
+  g.fillRect(GEO.pageX - GEO.Tstack - 14, 0, GEO.pageW * 2 + GEO.gutter + GEO.Tstack * 2 + 28, shelfH);
   const leftIdx = clamp(state.sheet * 2, 0, Math.max(0, book.pages - 1));
   const rightIdx = clamp(state.sheet * 2 + 1, 0, Math.max(0, book.pages - 1));
   // 桌面上的书投影
   g.save();
-  g.shadowColor = "rgba(0,0,0,.5)"; g.shadowBlur = 26; g.shadowOffsetY = 10;
+  g.shadowColor = "rgba(0,0,0,.55)"; g.shadowBlur = 30; g.shadowOffsetY = 12;
   g.fillStyle = "#f7f2e7";
-  g.fillRect(GEO.pageX - 2, GEO.pageY - 2, GEO.pageW + GEO.gutter + GEO.pageW + 4, GEO.pageH + 4);
+  g.fillRect(GEO.pageX - 3, GEO.pageY - 3, GEO.pageW + GEO.gutter + GEO.pageW + 6, GEO.pageH + 6);
   g.restore();
   // 左右纸叠（在页面下方一层）
   drawStack(GEO.blockX, GEO.pageY, GEO.leftW, GEO.pageH, true);
@@ -148,8 +172,17 @@ function draw() {
   drawPageAt(leftIdx, GEO.pageX, GEO.pageY, GEO.pageW, GEO.pageH);
   drawPageAt(rightIdx, rectoX(), GEO.pageY, GEO.pageW, GEO.pageH);
   drawSpine();
-  drawBoardEdges();
   drawFan();
+  drawBoardEdges();
+  // 底部厚度状态行（原版：左厚 x mm / 右厚 y mm · 书口按章节分带…）
+  const fracNow = clamp(state.sheetF / Math.max(1, book.sheets - 1), 0, 1);
+  const mmL = (book.pages * MM_PER_PG * fracNow).toFixed(1);
+  const mmR = (book.pages * MM_PER_PG * (1 - fracNow)).toFixed(1);
+  const baseY = Math.min(GEO.H - 18, GEO.pageY + GEO.pageH + 34);
+  g.font = `${Math.max(11, GEO.H * 0.019)}px "PingFang SC,Microsoft YaHei,sans-serif"`;
+  g.textAlign = "center"; g.textBaseline = "alphabetic";
+  g.fillStyle = "rgba(233,225,210,.9)";
+  g.fillText(`左厚 ${mmL} mm / 右厚 ${mmR} mm　·　书口按章节分带，点一下跳到那一章`, GEO.W / 2, baseY);
   g.restore();
 }
 function drawCurve() {

@@ -31,15 +31,16 @@ function layout() {
   GEO.W = w; GEO.H = h;
   GEO.DPR = Math.min(2, (typeof window !== "undefined" && window.devicePixelRatio) || 1);
   const pad = Math.min(48, w * 0.03);
-  // 先估一个书厚，页宽 = (可用宽 - 两侧纸叠) 分给两页；再用高度校核
-  const stackEst = Math.max(4, book.pages * MM_PER_PG * ((h - pad * 2) / 210) * 0.5);
+  // 先估一个书厚（320 页 ≈ 页高×0.11，原版观感），页宽 = (可用宽 - 两侧纸叠) 分给两页
+  const stackEst = Math.max(10, (h - pad * 2) * (book.pages * MM_PER_PG) / 210);
   let pw = (w - pad * 2 - stackEst * 2) / 2.3, ph = pw * 1.42;
   const maxH = h - pad * 2;
   if (ph > maxH) { ph = maxH; pw = ph / 1.42; }
   GEO.fitPageW = pw;
   const z = state.zoom || 1;
   GEO.pageW = pw * z; GEO.pageH = ph * z;
-  GEO.Tstack = Math.max(4, book.pages * MM_PER_PG * (GEO.pageH / 210) * 0.5);
+  // 书厚 = 页高 × (总页数×每页厚)/210mm —— 真实厚高比，320 页书 ≈ 80px，一眼可见
+  GEO.Tstack = Math.max(10, GEO.pageH * (book.pages * MM_PER_PG) / 210);
   const stack = GEO.Tstack;
   GEO.leftWBase = stack; GEO.rightWBase = stack;
   GEO.gutter = Math.max(6, GEO.pageW * 0.055);

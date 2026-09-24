@@ -22,7 +22,7 @@ const LINEAR_PX_PER_SHEET = 3.2;
 const ZOOM_MIN = 0.5, ZOOM_MAX = 6, ZOOM_STEP = 1.25;
 const HI_MAX_PX = 6e6;            // 单页整页位图上限（test: 3× 时整页位图 > 6M px）
 const HICACHE_PX = 18e6;
-const IMG_W_MIN = 900, IMG_W_MAX = 2400, IMG_PIX_BUDGET = 26e6;
+const IMG_W_MIN = 800, IMG_W_MAX = 2400, IMG_PIX_BUDGET = 26e6;
 const FIG_LINES = 8;              // 正文插图占行数（test: img 块 → FIG_LINES 行）
 
 /* ---------------------------- 状态 ---------------------------- */

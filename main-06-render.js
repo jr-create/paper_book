@@ -97,6 +97,19 @@ function paintPage(g, idx, W, H) {
   paper.addColorStop(1, "#f3edde");
   g.fillStyle = paper;
   g.fillRect(0, 0, W, H);
+  // 页眉：左「书口」右「已读百分比」（原版样式）
+  const pctTxt = Math.round(clamp(idx / Math.max(1, book.pages - 1), 0, 1) * 100) + "%";
+  g.fillStyle = "#8d8271";
+  g.font = `${Math.max(7, fs * 0.62)}px ${serifStack()}`;
+  g.textBaseline = "alphabetic";
+  g.textAlign = "left";
+  g.fillText("书口", padX, padT - lh * 0.55);
+  g.textAlign = "right";
+  g.fillText(pctTxt, W - padX, padT - lh * 0.55);
+  // 页眉下的细分隔线
+  g.strokeStyle = "rgba(120,105,80,.35)";
+  g.lineWidth = 0.7;
+  g.beginPath(); g.moveTo(padX, padT - lh * 0.32); g.lineTo(W - padX, padT - lh * 0.32); g.stroke();
   if (m.opening && m.t) {
     g.fillStyle = "#2a231c"; g.textAlign = "left"; g.textBaseline = "alphabetic";
     g.font = `bold ${fs * HEAD_SCALE}px ${serifStack()}`;
