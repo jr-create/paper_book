@@ -67,39 +67,55 @@ function drawSpine() {
   ctx.fillStyle = g;
   ctx.fillRect(GEO.pageX + GEO.pageW - GEO.gutter * 0.5, GEO.pageY, GEO.gutter * 1.6, GEO.pageH);
 }
+/* 纸叠：页面外侧的「已读/未读」纸堆——层状线条 + 侧边渐变，纸的厚度感 */
 function drawStack(x, y, w, h, isRead) {
+  if (w < 0.5) return;
   const g = ctx;
   g.save();
-  g.fillStyle = isRead ? "#e8dfc9" : "#f2ebd9";
+  // 纸叠基底
+  const grad = g.createLinearGradient(x, 0, x + w, 0);
+  if (isRead) { grad.addColorStop(0, "#f4ecd9"); grad.addColorStop(1, "#c9bda0"); }
+  else        { grad.addColorStop(0, "#cfc4a8"); grad.addColorStop(1, "#f4ecd9"); }
+  g.fillStyle = grad;
   g.fillRect(x, y, w, h);
-  g.fillStyle = "rgba(90,80,64,.15)";
-  const n = Math.max(8, Math.min(60, book.pages));
-  const step = h / n;
-  for (let i = 1; i < n; i++) g.fillRect(x, y + i * step, w, 0.6);
+  // 层状纸页线
+  g.fillStyle = "rgba(120,105,80,.22)";
+  const n = clamp(Math.round(w / 2.2), 6, 46);
+  for (let i = 1; i < n; i++) {
+    const xx = x + w * i / n;
+    g.fillRect(xx, y + 2, 0.7, h - 4);
+  }
+  // 外缘阴影
+  const edge = g.createLinearGradient(isRead ? x : x + w - 3, 0, isRead ? x + 3 : x + w, 0);
+  edge.addColorStop(0, "rgba(60,50,38,.25)");
+  edge.addColorStop(1, "rgba(60,50,38,0)");
+  g.fillStyle = edge;
+  g.fillRect(isRead ? x : x + w - 3, y, 3, h);
   g.restore();
 }
 function drawFan() {
   if (!book.chaps.length) return;
-  const w = Math.max(3, GEO.leftWBase * 0.9);
+  // 章带画在纸叠侧缘内（宽度与纸叠一致，避免伸出纸叠外的色块）
+  const w = Math.max(3, Math.min(GEO.leftWBase, GEO.rightWBase) - 2);
   const cur = bandAt(GEO.pageX - 1, GEO.pageY + GEO.pageH / 2);
   book.chaps.forEach((C, i) => {
     const y0 = GEO.pageY + GEO.pageH * (C.start / Math.max(1, book.pages));
     const y1 = GEO.pageY + GEO.pageH * ((C.start + C.pages) / Math.max(1, book.pages));
-    // 已读章在左书口，未读章在右书口
+    // 已读章在左书口，未读章在右书口（与 stackX 同一几何）
     const readSide = (C.start + C.pages) <= state.sheetF * 2 + 1;
-    const x = readSide ? GEO.pageX - w : rectoX();
-    ctx.fillStyle = (cur && i === cur.chapter) ? "rgba(196,164,108,.95)"
-      : (i % 2 ? "rgba(120,105,80,.55)" : "rgba(150,132,100,.55)");
-    ctx.fillRect(x, y0 + 0.5, w, Math.max(1, y1 - y0 - 1));
+    const x = readSide ? GEO.pageX - w : rectoRight() + 2;
+    ctx.fillStyle = (cur && i === cur.chapter) ? "rgba(224,180,106,.95)"
+      : (i % 2 ? "rgba(160,138,100,.75)" : "rgba(190,166,120,.75)");
+    ctx.fillRect(x, y0 + 0.5, w - 1, Math.max(1, y1 - y0 - 1));
   });
   state.fan.bands = book.chaps.length;
 }
 function drawBoardEdges() {
   const g = ctx;
   g.save();
-  g.strokeStyle = "rgba(70,60,45,.35)"; g.lineWidth = 1;
-  g.strokeRect(GEO.pageX, GEO.pageY, GEO.pageW, GEO.pageH);
-  g.strokeRect(rectoX(), GEO.pageY, GEO.pageW, GEO.pageH);
+  g.strokeStyle = "rgba(70,60,45,.4)"; g.lineWidth = 1;
+  g.strokeRect(GEO.pageX + 0.5, GEO.pageY + 0.5, GEO.pageW - 1, GEO.pageH - 1);
+  g.strokeRect(rectoX() + 0.5, GEO.pageY + 0.5, GEO.pageW - 1, GEO.pageH - 1);
   g.restore();
 }
 
@@ -111,11 +127,24 @@ function draw() {
   g.clearRect(0, 0, canvasEl.width, canvasEl.height);
   g.save();
   g.scale(GEO.DPR, GEO.DPR);
-  g.fillStyle = "#d8d0bd"; g.fillRect(0, 0, GEO.W, GEO.H);
+  // 深色阅读桌面背景（原版样式）
+  const desk = g.createRadialGradient(GEO.W / 2, GEO.H / 2, GEO.H * 0.2, GEO.W / 2, GEO.H / 2, GEO.W * 0.75);
+  desk.addColorStop(0, "#3a3227");
+  desk.addColorStop(1, "#241f18");
+  g.fillStyle = desk;
+  g.fillRect(0, 0, GEO.W, GEO.H);
   const leftIdx = clamp(state.sheet * 2, 0, Math.max(0, book.pages - 1));
   const rightIdx = clamp(state.sheet * 2 + 1, 0, Math.max(0, book.pages - 1));
+  // 桌面上的书投影
+  g.save();
+  g.shadowColor = "rgba(0,0,0,.5)"; g.shadowBlur = 26; g.shadowOffsetY = 10;
+  g.fillStyle = "#f7f2e7";
+  g.fillRect(GEO.pageX - 2, GEO.pageY - 2, GEO.pageW + GEO.gutter + GEO.pageW + 4, GEO.pageH + 4);
+  g.restore();
+  // 左右纸叠（在页面下方一层）
   drawStack(GEO.blockX, GEO.pageY, GEO.leftW, GEO.pageH, true);
   drawStack(rectoRight() + 2, GEO.pageY, GEO.rightW, GEO.pageH, false);
+  // 双页
   drawPageAt(leftIdx, GEO.pageX, GEO.pageY, GEO.pageW, GEO.pageH);
   drawPageAt(rightIdx, rectoX(), GEO.pageY, GEO.pageW, GEO.pageH);
   drawSpine();
@@ -128,12 +157,21 @@ function drawCurve() {
   if (!el || !el.getContext) return;
   const g = el.getContext("2d");
   g.clearRect(0, 0, el.width, el.height);
-  g.strokeStyle = "rgba(90,80,64,.5)"; g.lineWidth = 1.5;
+  // 网格底
+  g.strokeStyle = "rgba(255,255,255,.06)"; g.lineWidth = 1;
+  for (let i = 1; i < 4; i++) {
+    g.beginPath(); g.moveTo(0, el.height * i / 4); g.lineTo(el.width, el.height * i / 4); g.stroke();
+  }
+  // 增益曲线：慢速精确、快速粗略
+  const grad = g.createLinearGradient(0, 0, el.width, 0);
+  grad.addColorStop(0, "#e0b46a");
+  grad.addColorStop(1, "#c4893a");
+  g.strokeStyle = grad; g.lineWidth = 2;
   g.beginPath();
   for (let i = 0; i <= 40; i++) {
     const t = i / 40;
-    const gain = gainFor(t * DIST_CAP, 0);
-    const x = t * el.width, y = el.height - gain / GAIN_COARSE * el.height * 0.9;
+    const gain = gainFor(t * 900, 0);
+    const x = t * el.width, y = el.height - gain / GAIN_COARSE * el.height * 0.86 - 2;
     i ? g.lineTo(x, y) : g.moveTo(x, y);
   }
   g.stroke();

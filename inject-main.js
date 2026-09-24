@@ -32,11 +32,8 @@ draw(); drawCurve(); updateHUD();
 bindEvents();
 
 function loop(){
-  if(Math.abs(state.sheetF - state.sheet) > 0.001){
-    state.sheetF += (state.sheet - state.sheetF) * 0.18;
-    if(Math.abs(state.sheetF - state.sheet) <= 0.002) state.sheetF = state.sheet;
-    draw(); updateHUD();
-  }
+  // 每帧都重画：翻页动画、悬停、导入后的书口变化都依赖持续渲染
+  draw(); updateHUD();
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);

@@ -90,7 +90,13 @@ function paintPage(g, idx, W, H) {
   const m = pageMeta(idx);
   if (m.img && book.imgPages.has(idx)) { drawImagePage(idx, 0, 0, W, H); return; }
   g.save();
-  g.fillStyle = "#fbf7ee"; g.fillRect(0, 0, W, H);
+  // 纸面：轻微上下渐变，中间略亮（纸张质感）
+  const paper = g.createLinearGradient(0, 0, 0, H);
+  paper.addColorStop(0, "#f8f3e6");
+  paper.addColorStop(0.5, "#fdfaf1");
+  paper.addColorStop(1, "#f3edde");
+  g.fillStyle = paper;
+  g.fillRect(0, 0, W, H);
   if (m.opening && m.t) {
     g.fillStyle = "#2a231c"; g.textAlign = "left"; g.textBaseline = "alphabetic";
     g.font = `bold ${fs * HEAD_SCALE}px ${serifStack()}`;

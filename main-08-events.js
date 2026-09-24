@@ -67,14 +67,13 @@ function panelOn(which) {
 }
 function turnSheet(dir) {
   const max = Math.max(0, book.sheets - 1);
+  // 翻页动画：sheetF 平滑滑向目标张（loop 每帧插值）
   state.sheet = clamp(state.sheet + dir, 0, max);
-  state.sheetF = state.sheet;
   updateHUD();
 }
 function goToSheet(s) {
   const max = Math.max(0, book.sheets - 1);
   state.sheet = clamp(Math.round(s), 0, max);
-  state.sheetF = state.sheet;
   updateHUD();
 }
 function jumpToChapter(i) {
@@ -96,7 +95,6 @@ function applyDrag(delta) {
   state.sheet = Math.round(state.sheetF);
   updateHUD();
 }
-
 /* --------------------- 事件绑定 --------------------- */
 let NOWV = 0;
 function bindEvents() {
@@ -125,7 +123,6 @@ function bindEvents() {
       const gain = gainFor(Math.abs(dy), step * 200);
       const max = Math.max(0, book.sheets - 1);
       state.sheetF = clamp(d.s0 + dy / 40 * gain, 0, max);
-      state.sheet = Math.round(state.sheetF);
       updateHUD();
     } else if (state.pan) {
       const p = state.pan;
@@ -149,7 +146,6 @@ function bindEvents() {
         if (onCmapBand(x, y)) return;
       }
       state.sheet = Math.round(clamp(state.sheetF, 0, Math.max(0, book.sheets - 1)));
-      state.sheetF = state.sheet;
       updateHUD();
       return;
     }
