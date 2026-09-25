@@ -94,6 +94,8 @@ ok("PDF 端到端：导入成功且走图像页管线",
   R.pdfE2E && R.pdfE2E.source === "probe.pdf" && R.pdfE2E.imgPages === 2,
   JSON.stringify(R.pdfE2E));
 ok("PDF 端到端：pdf.js 真实渲染出页面", R.pdfE2E && R.pdfE2E.rendered === true);
+ok("放大后按更高分辨率重渲染（不发糊）", R.pdfE2E && R.pdfE2E.hiRes >= 1200,
+  R.pdfE2E ? "hiRes=" + R.pdfE2E.hiRes + "px（期望≈1406）" : "无数据");
 
 console.log("\n[E] 主题与 AI 面板");
 ok("主题按钮循环切换并回到原版", R.theme && R.theme.cycleOk === true,

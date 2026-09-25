@@ -4573,11 +4573,20 @@ if(typeof window.parsePdf === "function"){
   })(window.parsePdf);
 }
 /* pdfjs 矢量页解码接线：原版 decodePageImage 只认 jpeg/raw，这里补 pdfjs 分支。
-   必须放在主程序之后（此时 window.decodePageImage 才存在）。 */
+   必须放在主程序之后（此时 window.decodePageImage 才存在）。
+   分辨率：默认 900px 在 retina（DPR=2）或放大后会被拉糊 —— 按 DPR（draw 期间
+   已含 zoom）动态抬高，封顶 2000 控制内存（2000px 页 ≈ 20MB × 缓存 6 页）。 */
 if(typeof window.decodePageImage === "function" && typeof pdfjsRenderPage === "function"){
   window.decodePageImage = (function(_orig){
     return function(idx, d, target){
-      if(d && d.kind === "pdfjs") return pdfjsRenderPage(d.page, target);
+      if(d && d.kind === "pdfjs"){
+        let t = target;
+        if(!t){
+          const dpr = (typeof DPR === "number" && DPR > 0) ? DPR : (window.devicePixelRatio||1);
+          t = Math.min(2000, Math.max(900, Math.round(900 * dpr)));
+        }
+        return pdfjsRenderPage(d.page, t);
+      }
       return _orig(idx, d);
     };
   })(window.decodePageImage);
@@ -4807,10 +4816,23 @@ if(typeof window.decodePageImage === "function" && typeof pdfjsRenderPage === "f
     if(VIEW.z > 1){ VIEW.tx = ax - ux*VIEW.z; VIEW.ty = ay - uy*VIEW.z; }
     else { VIEW.tx = 0; VIEW.ty = 0; }
     layout(); draw();                   // 重排抬高 backing，重绘保持文字锐利
+    scheduleHiRefresh();
   }
   window.viewZoomTo = zoomTo;
-  window.viewReset = function(){ VIEW.z=1; VIEW.tx=0; VIEW.ty=0; layout(); draw(); };
+  window.viewReset = function(){ VIEW.z=1; VIEW.tx=0; VIEW.ty=0; layout(); draw(); scheduleHiRefresh(); };
   window.viewState = ()=>({ z:VIEW.z, tx:VIEW.tx, ty:VIEW.ty });
+
+  /* 缩放停稳后：PDF 图像页按新分辨率重渲染（防抖，避免滚轮连步时渲染风暴）
+     注意 IMG_CACHE 是主程序顶层 const，不在 window 上 —— 必须用裸标识符访问 */
+  let hiTimer = 0;
+  function scheduleHiRefresh(){
+    if(typeof IMG_CACHE === "undefined" || !book || !book.imgPages || !book.imgPages.size) return;
+    clearTimeout(hiTimer);
+    hiTimer = setTimeout(()=>{
+      IMG_CACHE.clear();
+      try{ draw(); }catch(_){}
+    }, 350);
+  }
 
   /* 顶栏按钮 + HUD */
   const bi=$("btnZoomIn"), bo=$("btnZoomOut"), bc=$("btnChrome");

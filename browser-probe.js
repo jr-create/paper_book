@@ -222,6 +222,19 @@
     R.pdfE2E.rendered = rendered;
     if (cacheErr) R.pdfE2E.cacheErr = cacheErr;
     if (typeof PDFJS !== "undefined") R.pdfE2E.hasDoc = !!(PDFJS.doc);
+    // 放大后应按更高分辨率重渲染（清缓存 + 重画）
+    if (window.viewZoomTo && book.imgPages && book.imgPages.size){
+      window.viewZoomTo(1.5625);
+      let hi = 0;
+      for (let t = 0; t < 80; t++){
+        await new Promise(r => setTimeout(r, 100));
+        for (const v of IMG_CACHE.values())
+          if (v && v.width) hi = Math.max(hi, Math.max(v.width, v.height));
+        if (hi >= 1200) break;
+      }
+      R.pdfE2E.hiRes = hi;               // 期望 ≈ min(2000, 900×1.5625) = 1406
+      if (window.viewReset) window.viewReset();
+    }
     } finally { try { window.Worker = _RealWorker; } catch(_){} }
   } catch(e) {
     R.pdfE2E = { error: String(e && e.message || e) };
