@@ -110,6 +110,18 @@
     .app{grid-template-columns:1fr;grid-template-rows:auto 1fr auto;height:100dvh;}
     aside.side{max-height:36vh;border-left:0;border-top:1px solid rgba(255,255,255,.07);}
   }
+  /* ============ 面板显隐 + 整体缩放（追加功能，1× 默认零变化） ============ */
+  .app.no-side{grid-template-columns:1fr;}
+  .app.no-side aside.side{display:none;}
+  .app.no-top header.top{display:none;}
+  #chromeChip{position:fixed;right:14px;bottom:14px;z-index:100000;display:none;
+    cursor:pointer;font-family:inherit;font-size:12px;color:#e8dcc0;background:rgba(20,16,10,.72);
+    border:1px solid rgba(216,162,74,.4);border-radius:18px;padding:7px 14px;backdrop-filter:blur(6px);}
+  #chromeChip:hover{border-color:rgba(216,162,74,.8);}
+  #zoomHud{position:fixed;left:14px;bottom:14px;z-index:100000;display:none;cursor:pointer;
+    font-size:12px;color:#e8dcc0;background:rgba(20,16,10,.72);border:1px solid rgba(216,162,74,.4);
+    border-radius:18px;padding:7px 12px;user-select:none;}
+  #zoomHud:hover{border-color:rgba(216,162,74,.8);}
   /* ============ 主题（默认原版，零改动） ============ */
   html[data-bt="night"] body .app{ filter: invert(.9) hue-rotate(180deg); }
   html[data-bt="night"] body{ background:#0b0b0c; }
@@ -2535,6 +2547,9 @@ function pdfjsRenderPage(pageNo, target){
   <header class="top">
     <div class="brand"><b>书口</b><span id="docTitle">把「厚度」还给电子书 · 双页跨页原型</span></div>
     <div class="spacer"></div>
+    <button class="btn" id="btnChrome" title="循环：隐藏侧栏 → 全部隐藏（Esc 恢复）">隐藏面板</button>
+    <button class="btn" id="btnZoomOut" title="缩小">－</button>
+    <button class="btn" id="btnZoomIn" title="放大（Ctrl+滚轮以光标为锚）">＋</button>
     <button class="btn" id="btnAI">AI 分析</button>
     <button class="btn" id="btnTheme">主题：原版</button>
     <button class="btn pri" id="btnImport">导入文档</button>
@@ -4504,6 +4519,8 @@ drawCurve();
 refreshTitle();
 requestAnimationFrame(loop);
 </script>
+<button id="chromeChip">显示面板</button>
+<div id="zoomHud" title="点击恢复 1×">100%</div>
 <script>
 /* ================= PDF 原版渲染补丁（Koodo 式，追加于原版主程序之后） =================
    原版主程序一字未改。这里只做两件事：
@@ -4725,6 +4742,162 @@ if(typeof window.decodePageImage === "function" && typeof pdfjsRenderPage === "f
   }
   $("btnAiLocal").addEventListener("click", aiLocal);
   $("btnAiLlm").addEventListener("click", aiLlm);
+})();
+
+/* ==================== 面板显隐 + 整体缩放（视觉层补丁） ====================
+   1× 时零干预，原版观感与交互完全不变。放大走「抬高 DPR 重绘 + CSS 放大」，
+   每个原版 CSS 像素仍有完整设备像素 —— 文字保持原版级清晰度。
+   原版主程序一字未改：layout/draw 是函数声明，包装后裸调用同样生效；
+   DPR 是顶层 let，跨脚本重赋值即生效。 */
+(function(){
+  const $ = id => document.getElementById(id);
+  const cv = $("cv"), stage = $("stage");
+  const chip = $("chromeChip"), hud = $("zoomHud");
+  const appEl = (document.querySelector && document.querySelector(".app")) || null;
+  if(!cv || !stage || !chip || !hud || !appEl) return;
+  if(typeof layout !== "function" || typeof draw !== "function" || window.__viewPatched) return;
+  window.__viewPatched = true;
+
+  const VIEW = window.__view = { z:1, tx:0, ty:0, drag:null, pinch:null };
+  const Z_MIN = 0.6, Z_MAX = 4;
+  const dpr0 = () => Math.min(2, window.devicePixelRatio||1);
+
+  function clampPan(){
+    const sw = cv.parentElement.clientWidth, sh = cv.parentElement.clientHeight;
+    if(VIEW.z <= 1){ VIEW.tx = (sw - W*VIEW.z)/2; VIEW.ty = (sh - H*VIEW.z)/2; }
+    else{
+      VIEW.tx = Math.min(0, Math.max(sw - W*VIEW.z, VIEW.tx));
+      VIEW.ty = Math.min(0, Math.max(sh - H*VIEW.z, VIEW.ty));
+    }
+  }
+  function applyTf(){
+    clampPan();
+    cv.style.transformOrigin = "0 0";
+    cv.style.transform = "translate("+VIEW.tx+"px,"+VIEW.ty+"px) scale("+VIEW.z+")";
+    hud.style.display = VIEW.z===1 ? "none" : "block";
+    hud.textContent = Math.round(VIEW.z*100)+"%";
+  }
+  /* layout：原版会自己把 DPR 重置回 dpr0 并按它设 backing，所以放大 backing
+     必须放在 _orig() 之后重做；W/H/GEO 用原版算好的结果 */
+  window.layout = (function(_orig){ return function(){
+    _orig();
+    const z = VIEW.z;
+    if(z !== 1){
+      DPR = dpr0()*z;
+      cv.width  = Math.round(W*DPR); cv.height = Math.round(H*DPR);
+      DPR = dpr0();
+    }
+    cv.style.width = (W*z)+"px"; cv.style.height = (H*z)+"px";
+    applyTf();
+  }; })(window.layout);
+  /* draw：帧内 DPR 与 backing 一致 → 文字锐利 */
+  window.draw = (function(_orig){ return function(){
+    const z = VIEW.z, saved = DPR;
+    DPR = dpr0()*z;
+    try{ _orig(); } finally{ DPR = saved; }
+    applyTf();
+  }; })(window.draw);
+
+  function zoomTo(nz, sx, sy){          // sx/sy：相对画布的屏幕坐标（锚点，可选）
+    nz = Math.min(Z_MAX, Math.max(Z_MIN, nz));
+    const sw = cv.parentElement.clientWidth, sh = cv.parentElement.clientHeight;
+    const ax = (sx===undefined) ? sw/2 : sx, ay = (sy===undefined) ? sh/2 : sy;
+    const ux = (ax - VIEW.tx)/VIEW.z, uy = (ay - VIEW.ty)/VIEW.z;
+    VIEW.z = nz;
+    if(VIEW.z > 1){ VIEW.tx = ax - ux*VIEW.z; VIEW.ty = ay - uy*VIEW.z; }
+    else { VIEW.tx = 0; VIEW.ty = 0; }
+    layout(); draw();                   // 重排抬高 backing，重绘保持文字锐利
+  }
+  window.viewZoomTo = zoomTo;
+  window.viewReset = function(){ VIEW.z=1; VIEW.tx=0; VIEW.ty=0; layout(); draw(); };
+  window.viewState = ()=>({ z:VIEW.z, tx:VIEW.tx, ty:VIEW.ty });
+
+  /* 顶栏按钮 + HUD */
+  const bi=$("btnZoomIn"), bo=$("btnZoomOut"), bc=$("btnChrome");
+  if(bi) bi.addEventListener("click", ()=>zoomTo(VIEW.z*1.25));
+  if(bo) bo.addEventListener("click", ()=>zoomTo(VIEW.z/1.25));
+  hud.addEventListener("click", window.viewReset);
+  if(bc) bc.addEventListener("click", toggleChrome);
+
+  /* 面板显隐：全部显示 → 隐藏侧栏 → 全部隐藏（顶栏藏起后用悬浮把手/Esc 恢复） */
+  function chromeState(){
+    return appEl.classList.contains("no-top") ? 2 : appEl.classList.contains("no-side") ? 1 : 0;
+  }
+  function applyChrome(){
+    const s = chromeState();
+    bc.textContent = s===0 ? "隐藏面板" : s===1 ? "隐藏全部" : "显示面板";
+    chip.style.display = s===2 ? "block" : "none";
+    layout(); draw();     // 显隐后 stage 尺寸变化 → 重排 + 重绘
+  }
+  function toggleChrome(){
+    const s = (chromeState()+1)%3;
+    appEl.classList.toggle("no-side", s>=1);
+    appEl.classList.toggle("no-top", s===2);
+    applyChrome();
+  }
+  window.chromeState = chromeState;
+  window.toggleChrome = toggleChrome;
+  chip.addEventListener("click", ()=>{ appEl.classList.remove("no-side","no-top"); applyChrome(); });
+  window.addEventListener("keydown", e=>{
+    if(e.key==="Escape" && chromeState()!==0){
+      appEl.classList.remove("no-side","no-top"); applyChrome();
+    }
+  });
+
+  /* 指针：z>1 时画布拖动 = 平移（捕获阶段先于原版 cv 监听生效；
+     move/up 挂 window —— 拖出 stage 也不丢） */
+  stage.addEventListener("pointerdown", e=>{
+    if(VIEW.z<=1 || VIEW.pinch || e.target!==cv) return;
+    VIEW.drag = { id:e.pointerId, x:e.clientX, y:e.clientY, tx:VIEW.tx, ty:VIEW.ty };
+    e.stopPropagation();
+  }, true);
+  window.addEventListener("pointermove", e=>{
+    if(VIEW.pinch){ pinchMove(e); e.stopPropagation(); return; }
+    if(!VIEW.drag || e.pointerId!==VIEW.drag.id) return;
+    VIEW.tx = VIEW.drag.tx + (e.clientX-VIEW.drag.x);
+    VIEW.ty = VIEW.drag.ty + (e.clientY-VIEW.drag.y);
+    applyTf(); e.stopPropagation();
+  }, true);
+  window.addEventListener("pointerup", e=>{
+    if(VIEW.pinch){ pinchEnd(e); e.stopPropagation(); return; }
+    if(VIEW.drag && e.pointerId===VIEW.drag.id){ VIEW.drag=null; e.stopPropagation(); }
+  }, true);
+  window.addEventListener("pointercancel", ()=>{ VIEW.drag=null; }, true);
+
+  /* 双指捏合（触屏；两指落下即接管，不翻页） */
+  const pts = new Map();
+  stage.addEventListener("pointerdown", e=>{
+    if(e.target!==cv || e.pointerType==="mouse") return;
+    pts.set(e.pointerId, {x:e.clientX, y:e.clientY});
+    if(pts.size===2){
+      const [a,b]=[...pts.values()];
+      VIEW.pinch = { d0:Math.hypot(a.x-b.x,a.y-b.y)||1, z0:VIEW.z };
+      VIEW.drag=null; e.stopPropagation();
+    }
+  }, true);
+  function pinchMove(e){
+    if(!pts.has(e.pointerId)) return;
+    pts.set(e.pointerId, {x:e.clientX, y:e.clientY});
+    if(pts.size===2 && VIEW.pinch){
+      const [a,b]=[...pts.values()];
+      const r = cv.getBoundingClientRect();
+      zoomTo(VIEW.pinch.z0 * Math.hypot(a.x-b.x,a.y-b.y)/VIEW.pinch.d0,
+             (a.x+b.x)/2 - r.left, (a.y+b.y)/2 - r.top);
+      e.stopPropagation();
+    }
+  }
+  function pinchEnd(e){ pts.delete(e.pointerId); if(pts.size<2) VIEW.pinch=null; }
+
+  /* Ctrl+滚轮 = 以光标为锚缩放（捕获阶段拦截；普通滚轮仍归原版翻页） */
+  stage.addEventListener("wheel", e=>{
+    if(!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault(); e.stopPropagation();
+    const r = cv.getBoundingClientRect();
+    zoomTo(VIEW.z * (e.deltaY<0 ? 1.12 : 1/1.12), e.clientX-r.left, e.clientY-r.top);
+  }, true);
+
+  /* 双击画布 = 回 1×（原版无 dblclick 语义，不冲突） */
+  cv.addEventListener("dblclick", ()=>{ window.viewReset(); });
 })();
 </script>
 

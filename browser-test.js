@@ -101,6 +101,21 @@ ok("主题按钮循环切换并回到原版", R.theme && R.theme.cycleOk === tru
 ok("AI 面板可展开", R.ai && R.ai.panelShown === true);
 ok("AI 本机分析出统计与关键词", R.ai && R.ai.statsReady === true);
 
+console.log("\n[F] 面板显隐 + 缩放");
+ok("面板三态循环（侧栏 → 全隐 → 恢复）",
+  R.chrome && R.chrome.s1 === 1 && R.chrome.s2 === 2 && R.chrome.restored === true,
+  R.chrome ? `s1=${R.chrome.s1} s2=${R.chrome.s2} 恢复=${R.chrome.restored}` : "无数据");
+ok("隐藏后悬浮把手出现", R.chrome && R.chrome.chipShown === true);
+ok("隐藏侧栏确实收起", R.chrome && R.chrome.sideGone === true);
+ok("＋/＋ 两次 → 1.56×，transform 已应用", R.zoom && R.zoom.zAfter === 1.5625 && R.zoom.tfApplied === true,
+  R.zoom ? "z=" + R.zoom.zAfter : "无数据");
+ok("放大后 backing 同步变大（重绘不模糊）", R.zoom && R.zoom.backingGrew === true);
+ok("放大后 HUD 显示", R.zoom && R.zoom.hudShown === true);
+ok("放大后 draw 不抛错", R.zoom && R.zoom.drawOk === true);
+ok("Ctrl+滚轮继续放大", R.zoom && R.zoom.ctrlWheelZooms === true);
+ok("普通滚轮仍翻页", R.zoom && R.zoom.plainWheelTurns === true);
+ok("双击恢复 1× 且 HUD 隐藏", R.zoom && R.zoom.reset === true && R.zoom.hudHidden === true);
+
 if (!fail) fs.rmSync(WORK, { recursive: true, force: true });
 else console.log("  [browser] 有失败项，现场保留于 _browser/（chrome.log / shot.png）");
 console.log(`\n===== ${pass} passed, ${fail} failed =====`);

@@ -135,6 +135,44 @@
     abtn.click();                                      // 收起
   }
 
+  /* ---------- 面板显隐 + 整体缩放 ---------- */
+  const cbtn = document.getElementById("btnChrome");
+  const zin = document.getElementById("btnZoomIn"), zout = document.getElementById("btnZoomOut");
+  const chipEl = document.getElementById("chromeChip"), hudEl = document.getElementById("zoomHud");
+  R.chrome = { hasBtn: !!cbtn };
+  R.zoom = { hasBtns: !!zin && !!zout };
+  if (cbtn && window.chromeState !== undefined) {
+    cbtn.click();
+    R.chrome.s1 = window.chromeState();                       // 1 = 隐藏侧栏
+    R.chrome.sideGone = document.querySelector("aside.side").offsetHeight === 0;
+    cbtn.click();
+    R.chrome.s2 = window.chromeState();                       // 2 = 全部隐藏
+    R.chrome.chipShown = chipEl.style.display === "block";
+    chipEl.click();
+    R.chrome.restored = window.chromeState() === 0;
+  }
+  if (zin && window.viewState) {
+    zin.click(); zin.click();
+    R.zoom.zAfter = +window.viewState().z.toFixed(4);         // 1.5625
+    R.zoom.tfApplied = cv.style.transform.indexOf("scale(1.5") >= 0 ||
+                       cv.style.transform.indexOf("scale(1.56") >= 0;
+    R.zoom.backingGrew = cv.width > cv.parentElement.clientWidth * (window.devicePixelRatio||1);
+    R.zoom.hudShown = hudEl.style.display === "block";
+    try { settle(50); draw(); R.zoom.drawOk = true; } catch(e){ R.zoom.drawOk = false; }
+    // Ctrl+滚轮：以光标为锚继续放大
+    const z0 = window.viewState().z;
+    cv.dispatchEvent(new WheelEvent("wheel", { deltaY:-120, ctrlKey:true, cancelable:true }));
+    R.zoom.ctrlWheelZooms = window.viewState().z > z0;
+    // 普通滚轮仍翻页
+    settle(50); draw();
+    cv.dispatchEvent(new WheelEvent("wheel", { deltaY:-120, cancelable:true }));
+    R.zoom.plainWheelTurns = state.sheet > 50 && Math.abs(window.viewState().z - z0 - 0.12) < 0.5;
+    // 双击回 1×
+    cv.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+    R.zoom.reset = window.viewState().z === 1;
+    R.zoom.hudHidden = hudEl.style.display === "none";
+  }
+
   /* ---------- PDF 端到端：合成 mini PDF → importFile → pdf.js 渲染 ---------- */
   function buildMiniPdf(){
     const objs = [];
