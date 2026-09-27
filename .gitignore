@@ -3,10 +3,11 @@ _*.js
 _*.html
 _*.bak
 _*.pdf
-_rendertest/
-_algofig/
+_*.jsonl
+_shotv/
 _browser/
-_wt/
+_imp/
+_e2e/
 
 # Node
 node_modules/
@@ -15,7 +16,5 @@ node_modules/
 Thumbs.db
 desktop.ini
 
-# 会话/调试产物补充
-_shotv/
-_sess_*.jsonl
+# 工具私有目录
 .workbuddy/

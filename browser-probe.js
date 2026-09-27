@@ -57,10 +57,10 @@
   }
   R.env = { dpr: DPR, win: innerWidth + "×" + innerHeight, canvasPx: cv.width + "×" + cv.height };
 
-  /* 接线检查：parsePdf 已被补丁包裹、decodePageImage 有 pdfjs 分支 */
+  /* 接线检查：parsePdf 已被补丁包裹、decodePageImage 函数体已内联 pdfjs 分支 */
   R.wiring = {
     parsePdfPatched: typeof parsePdf === "function" && String(parsePdf).indexOf("pdfjsBoot") >= 0,
-    decodePdfjs: !!(window.decodePageImage && window.decodePageImage.__pdfjsWrap),
+    decodePdfjs: typeof decodePageImage === "function" && String(decodePageImage).indexOf("pdfjsRenderPage") >= 0,
     pdfjsRenderPage: typeof pdfjsRenderPage === "function"
   };
 
