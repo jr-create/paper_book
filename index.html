@@ -114,7 +114,7 @@
   .app.no-side{grid-template-columns:1fr;}
   .app.no-side aside.side{display:none;}
   .app.no-top header.top{display:none;}
-  #viewbar{position:fixed;right:14px;bottom:64px;z-index:60;display:flex;gap:6px;align-items:center;}#viewbar button{appearance:none;cursor:pointer;font-family:var(--sans);font-size:12.5px;padding:7px 12px;border-radius:18px;border:1px solid rgba(216,162,74,.5);background:rgba(12,10,8,.72);color:var(--fg);backdrop-filter:blur(6px);}#viewbar button:hover{border-color:rgba(216,162,74,.8);background:rgba(216,162,74,.16);}#chromeChip{position:fixed;right:14px;bottom:14px;z-index:100000;display:none;
+  #chromeChip{position:fixed;right:14px;bottom:14px;z-index:100000;display:none;
     cursor:pointer;font-family:inherit;font-size:12px;color:#e8dcc0;background:rgba(20,16,10,.72);
     border:1px solid rgba(216,162,74,.4);border-radius:18px;padding:7px 14px;backdrop-filter:blur(6px);}
   #chromeChip:hover{border-color:rgba(216,162,74,.8);}
@@ -2550,6 +2550,7 @@ function pdfjsRenderPage(pageNo, target){
     <button class="btn" id="btnChrome" title="循环：隐藏侧栏 → 全部隐藏（Esc 恢复）">隐藏面板</button>
     <button class="btn" id="btnZoomOut" title="缩小">－</button>
     <button class="btn" id="btnZoomIn" title="放大（Ctrl+滚轮以光标为锚）">＋</button>
+    <button class="btn" id="vbFit" title="适应窗口（回到 1× 并居中）">适应窗口</button>
     <button class="btn" id="btnAI">AI 分析</button>
     <button class="btn" id="btnTheme">主题：原版</button>
     <button class="btn pri" id="btnImport">导入文档</button>
@@ -4527,7 +4528,7 @@ drawCurve();
 refreshTitle();
 requestAnimationFrame(loop);
 </script>
-<div id="viewbar"><button id="vbOut" title="缩小">−</button><button id="vbFit" title="适应窗口（回到 1× 并居中）">适应窗口</button><button id="vbIn" title="放大">＋</button></div><button id="chromeChip">显示面板</button>
+<button id="chromeChip">显示面板</button>
 <div id="zoomHud" title="点击恢复 1×">100%</div>
 <script>
 /* ================= PDF 原版渲染补丁（Koodo 式，追加于原版主程序之后） =================
@@ -4834,9 +4835,7 @@ if(typeof window.parsePdf === "function"){
   if(bi) bi.addEventListener("click", ()=>zoomTo(VIEW.z*1.25));
   if(bo) bo.addEventListener("click", ()=>zoomTo(VIEW.z/1.25));
   hud.addEventListener("click", window.viewReset);
-  const vbOut = document.getElementById("vbOut"), vbIn = document.getElementById("vbIn"), vbFit = document.getElementById("vbFit");
-  if(vbOut) vbOut.addEventListener("click", () => zoomTo(VIEW.z / 1.25));
-  if(vbIn)  vbIn.addEventListener("click", () => zoomTo(VIEW.z * 1.25));
+  const vbFit = document.getElementById("vbFit");
   if(vbFit) vbFit.addEventListener("click", () => zoomTo(1));
   if(bc) bc.addEventListener("click", toggleChrome);
 
