@@ -114,7 +114,7 @@
   .app.no-side{grid-template-columns:1fr;}
   .app.no-side aside.side{display:none;}
   .app.no-top header.top{display:none;}
-  #chromeChip{position:fixed;right:14px;bottom:14px;z-index:100000;display:none;
+  #viewbar{position:fixed;right:14px;bottom:64px;z-index:60;display:flex;gap:6px;align-items:center;}#viewbar button{appearance:none;cursor:pointer;font-family:var(--sans);font-size:12.5px;padding:7px 12px;border-radius:18px;border:1px solid rgba(216,162,74,.5);background:rgba(12,10,8,.72);color:var(--fg);backdrop-filter:blur(6px);}#viewbar button:hover{border-color:rgba(216,162,74,.8);background:rgba(216,162,74,.16);}#chromeChip{position:fixed;right:14px;bottom:14px;z-index:100000;display:none;
     cursor:pointer;font-family:inherit;font-size:12px;color:#e8dcc0;background:rgba(20,16,10,.72);
     border:1px solid rgba(216,162,74,.4);border-radius:18px;padding:7px 14px;backdrop-filter:blur(6px);}
   #chromeChip:hover{border-color:rgba(216,162,74,.8);}
@@ -4527,7 +4527,7 @@ drawCurve();
 refreshTitle();
 requestAnimationFrame(loop);
 </script>
-<button id="chromeChip">显示面板</button>
+<div id="viewbar"><button id="vbOut" title="缩小">−</button><button id="vbFit" title="适应窗口（回到 1× 并居中）">适应窗口</button><button id="vbIn" title="放大">＋</button></div><button id="chromeChip">显示面板</button>
 <div id="zoomHud" title="点击恢复 1×">100%</div>
 <script>
 /* ================= PDF 原版渲染补丁（Koodo 式，追加于原版主程序之后） =================
@@ -4775,7 +4775,7 @@ if(typeof window.parsePdf === "function"){
   function applyTf(){
     clampPan();
     cv.style.transformOrigin = "0 0";
-    cv.style.transform = "translate("+VIEW.tx+"px,"+VIEW.ty+"px) scale("+VIEW.z+")";
+    cv.style.transform = "translate("+VIEW.tx+"px,"+VIEW.ty+"px)";
     hud.style.display = VIEW.z===1 ? "none" : "block";
     hud.textContent = Math.round(VIEW.z*100)+"%";
   }
@@ -4788,6 +4788,8 @@ if(typeof window.parsePdf === "function"){
       DPR = dpr0()*z;
       cv.width  = Math.round(W*DPR); cv.height = Math.round(H*DPR);
       DPR = dpr0();
+    } else {
+      cv.width  = Math.round(W*dpr0()); cv.height = Math.round(H*dpr0());
     }
     cv.style.width = (W*z)+"px"; cv.style.height = (H*z)+"px";
     applyTf();
@@ -4832,6 +4834,10 @@ if(typeof window.parsePdf === "function"){
   if(bi) bi.addEventListener("click", ()=>zoomTo(VIEW.z*1.25));
   if(bo) bo.addEventListener("click", ()=>zoomTo(VIEW.z/1.25));
   hud.addEventListener("click", window.viewReset);
+  const vbOut = document.getElementById("vbOut"), vbIn = document.getElementById("vbIn"), vbFit = document.getElementById("vbFit");
+  if(vbOut) vbOut.addEventListener("click", () => zoomTo(VIEW.z / 1.25));
+  if(vbIn)  vbIn.addEventListener("click", () => zoomTo(VIEW.z * 1.25));
+  if(vbFit) vbFit.addEventListener("click", () => zoomTo(1));
   if(bc) bc.addEventListener("click", toggleChrome);
 
   /* 面板显隐：全部显示 → 隐藏侧栏 → 全部隐藏（顶栏藏起后用悬浮把手/Esc 恢复） */

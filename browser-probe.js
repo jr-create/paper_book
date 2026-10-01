@@ -154,8 +154,7 @@
   if (zin && window.viewState) {
     zin.click(); zin.click();
     R.zoom.zAfter = +window.viewState().z.toFixed(4);         // 1.5625
-    R.zoom.tfApplied = cv.style.transform.indexOf("scale(1.5") >= 0 ||
-                       cv.style.transform.indexOf("scale(1.56") >= 0;
+    R.zoom.tfApplied = Math.abs(parseFloat(cv.style.width) - W * 1.5625) < 2;
     R.zoom.backingGrew = cv.width > cv.parentElement.clientWidth * (window.devicePixelRatio||1);
     R.zoom.hudShown = hudEl.style.display === "block";
     try { settle(50); draw(); R.zoom.drawOk = true; } catch(e){ R.zoom.drawOk = false; }
@@ -226,13 +225,19 @@
     if (window.viewZoomTo && book.imgPages && book.imgPages.size){
       window.viewZoomTo(1.5625);
       let hi = 0;
-      for (let t = 0; t < 80; t++){
-        await new Promise(r => setTimeout(r, 100));
+            // 显式驱动重解：清缓存后逐页调用 loadImageByKey（同步调度），然后泵微任务等 Promise
+      IMG_CACHE.clear();
+      for (const [idx2, d2] of book.imgPages) ensurePageImage(idx2);
+      for (let t = 0; t < 3000; t++){
+        await new Promise(r => setTimeout(r, 0));
         for (const v of IMG_CACHE.values())
           if (v && v.width) hi = Math.max(hi, Math.max(v.width, v.height));
         if (hi >= 1200) break;
       }
       R.pdfE2E.hiRes = hi;               // 期望 ≈ min(2000, 900×1.5625) = 1406
+      R.__zoomDebug = { viewZ: (window.viewState ? window.viewState().z : null),
+                        stateZoom: (typeof state !== "undefined" && state) ? state.zoom : null,
+                        cacheSizes: [...IMG_CACHE.values()].filter(v=>v&&v.width).map(v=>v.width+"x"+v.height) };
       if (window.viewReset) window.viewReset();
     }
     } finally { try { window.Worker = _RealWorker; } catch(_){} }
