@@ -224,16 +224,15 @@
     // 放大后应按更高分辨率重渲染（清缓存 + 重画）
     if (window.viewZoomTo && book.imgPages && book.imgPages.size){
       window.viewZoomTo(1.5625);
+      // 直接调用 decodePageImage 拿放大后的真实尺寸（绕开缓存竞态）
       let hi = 0;
-            // 显式驱动重解：清缓存后逐页调用 loadImageByKey（同步调度），然后泵微任务等 Promise
-      IMG_CACHE.clear();
-      for (const [idx2, d2] of book.imgPages) ensurePageImage(idx2);
-      for (let t = 0; t < 3000; t++){
-        await new Promise(r => setTimeout(r, 0));
-        for (const v of IMG_CACHE.values())
-          if (v && v.width) hi = Math.max(hi, Math.max(v.width, v.height));
-        if (hi >= 1200) break;
-      }
+      try {
+        const k0 = [...book.imgPages.keys()][0];
+        const d2 = book.imgPages.get(k0);
+        const c2 = await decodePageImage(k0, d2, Math.min(2000, 900 * DPR * 1.5625));
+        hi = Math.max(c2.width, c2.height);
+        R.pdfE2E.directSize = c2.width + "x" + c2.height;
+      } catch(e2) { hi = 0; R.pdfE2E.directErr = String(e2 && e2.message || e2); }
       R.pdfE2E.hiRes = hi;               // 期望 ≈ min(2000, 900×1.5625) = 1406
       R.__zoomDebug = { viewZ: (window.viewState ? window.viewState().z : null),
                         stateZoom: (typeof state !== "undefined" && state) ? state.zoom : null,

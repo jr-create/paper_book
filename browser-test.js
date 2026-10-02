@@ -26,8 +26,12 @@ if (!chrome) {
 
 fs.rmSync(WORK, { recursive: true, force: true });
 fs.mkdirSync(WORK, { recursive: true });
-const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8")
-  .replace("</body>", '<script src="browser-probe.js"></script>\n</body>');
+const html0 = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+/* 注入到最后一个 </body>：kookit bundle 内部字符串里也含 </body>，必须取真正的文档结尾 */
+const injectAt = html0.lastIndexOf("</body>");
+const html = html0.slice(0, injectAt)
+  + '<script src="browser-probe.js"></script>\n</body>'
+  + html0.slice(injectAt + "</body>".length);
 if (!html.includes("browser-probe.js")) { console.error("注入探针失败"); process.exit(1); }
 fs.writeFileSync(path.join(WORK, "app.html"), html);
 fs.copyFileSync(path.join(ROOT, "browser-probe.js"), path.join(WORK, "browser-probe.js"));

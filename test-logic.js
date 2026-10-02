@@ -7,7 +7,10 @@ const JS_BLOCKS = [...fs.readFileSync("index.html", "utf8").matchAll(/<script>([
 if (!JS_BLOCKS.length) throw new Error("index.html 里没有 script 块");
 // 块1 是内联的 PDF 解析器，块2 是主程序。两个都要跑：
 // 只跑最后一个的话，「pdf.js 改了但没重新内联」这类事故在测试里完全看不出来。
-const js = JS_BLOCKS.join("\n;\n");
+// Kookit bundle 与接入补丁（window.Kookit / __kookitPatched）需要真实浏览器 DOM
+// （rangy 环境检测），Node 沙箱跑不了 —— 由 kookit-e2e.js 的无头 Chrome 全链路覆盖。
+const KOOKIT_FREE = JS_BLOCKS.filter(b => !b.includes("window.Kookit") && !b.includes("__kookitPatched"));
+const js = KOOKIT_FREE.join("\n;\n");
 
 let NOW = 1000;
 function mockCtx() {

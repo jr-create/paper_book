@@ -8,6 +8,8 @@ _shotv/
 _browser/
 _imp/
 _e2e/
+_tmp_koodo/
+kk-shot.png
 
 # Node
 node_modules/
