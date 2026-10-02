@@ -114,14 +114,15 @@
   .app.no-side{grid-template-columns:1fr;}
   .app.no-side aside.side{display:none;}
   .app.no-top header.top{display:none;}
-  #chromeChip{position:fixed;right:14px;bottom:14px;z-index:100000;display:none;
-    cursor:pointer;font-family:inherit;font-size:12px;color:#e8dcc0;background:rgba(20,16,10,.72);
-    border:1px solid rgba(216,162,74,.4);border-radius:18px;padding:7px 14px;backdrop-filter:blur(6px);}
-  #chromeChip:hover{border-color:rgba(216,162,74,.8);}
-  #zoomHud{position:fixed;left:14px;bottom:14px;z-index:100000;display:none;cursor:pointer;
-    font-size:12px;color:#e8dcc0;background:rgba(20,16,10,.72);border:1px solid rgba(216,162,74,.4);
+  #chromeChip{position:fixed;right:14px;top:14px;z-index:100000;display:none;
+    cursor:pointer;font-family:inherit;font-size:12px;color:#e8dcc0;background:rgba(20,16,10,.45);
+    border:1px solid rgba(216,162,74,.3);border-radius:18px;padding:7px 14px;backdrop-filter:blur(6px);}
+  #chromeChip:hover{border-color:rgba(216,162,74,.8);background:rgba(20,16,10,.7);}
+  #zoomHud{position:fixed;left:14px;top:14px;z-index:100000;display:none;cursor:pointer;
+    font-size:12px;color:rgba(232,220,192,.8);background:rgba(20,16,10,.45);
+    border:1px solid rgba(216,162,74,.25);
     border-radius:18px;padding:7px 12px;user-select:none;}
-  #zoomHud:hover{border-color:rgba(216,162,74,.8);}
+  #zoomHud:hover{border-color:rgba(216,162,74,.7);background:rgba(20,16,10,.7);color:#e8dcc0;}
   /* ============ 主题（默认原版，零改动） ============ */
   html[data-bt="night"] body .app{ filter: invert(.9) hue-rotate(180deg); }
   html[data-bt="night"] body{ background:#0b0b0c; }
