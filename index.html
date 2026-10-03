@@ -2700,8 +2700,8 @@ window.__m2668=true;
    ========================================================================= */
 
 /* ---------------------------------------------------------------- 常量 */
-const LINES = 23;            // 每页行数（配合 24 字/行，行距 ≈1.56，接近真实书籍版式）
-const CHARS = 24;            // 每行宽度预算（全角字符计）
+let LINES = 23;            // 每页行数（配合 24 字/行，行距 ≈1.56，接近真实书籍版式）
+let CHARS = 24;            // 每行宽度预算（全角字符计）
 const OPEN_LINES = 5;        // 每章开头留白，放章标题
 const MM_PER_PG = 0.1;
 
@@ -5547,7 +5547,23 @@ protected PDF: #`+e+"#":"");let l=await t.getOutline();o.toc=l?.map(Tb);let u=ne
         .paragraph {
             margin-bottom: 1em;
         }
-        </style>
+          /* ==== 书签/阅读统计面板样式 ==== */
+  .bm-list{max-height:220px;overflow-y:auto;}
+  .bm-row{display:flex;align-items:center;justify-content:space-between;gap:6px;
+    padding:6px 8px;border-radius:7px;cursor:pointer;font-size:12px;color:var(--fg);
+    transition:.12s;margin-bottom:2px;}
+  .bm-row:hover{background:rgba(255,255,255,.08);}
+  .bm-row.cur{background:rgba(216,162,74,.14);color:var(--accent);}
+  .bm-txt{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .bm-del{appearance:none;cursor:pointer;border:0;background:transparent;color:var(--dim);
+    font-size:13px;padding:2px 5px;border-radius:5px;flex:0 0 auto;}
+  .bm-del:hover{color:var(--bad);background:rgba(201,106,90,.12);}
+  .bm-empty{font-size:11.5px;color:var(--dim);padding:4px 0;}
+  .rt-row{display:flex;align-items:baseline;justify-content:space-between;
+    font-size:12.5px;padding:3px 0;}
+  .rt-row span{color:var(--dim);}
+  .rt-row b{font-variant-numeric:tabular-nums;font-family:ui-monospace,Menlo,Consolas,monospace;}
+</style>
         <div>${t.length>0?t.map(n=>`<p class="paragraph${n.isBold?" bold":""}">${n.text.trim()}</p>`).join(""):"Empty"}</div>
       `})}parse(){return F(this,void 0,void 0,function*(){try{fk.installGlobalFetchInterceptor();let t=new Blob([this.pdfBuffer]),n=new File([t],"book",{lastModified:new Date().getTime(),type:t.type});if(this.book=yield Rb(n,this.password),this.ocrEngine==="tesseract"){let i=yield(e=($s()?".":"")+"/lib/tesseractjs/worker.min.js",F(void 0,void 0,void 0,function*(){return yield(yield fetch(e)).text()})),o=URL.createObjectURL(new Blob([i],{type:"application/javascript"})),a=this.startFakeProgress(.85,3e4);try{let s=yield window.Tesseract.createWorker([this.ocrLang],1,{workerPath:o,corePath:"https://unpkg.com/tesseract.js-core@6.1.2",langPath:"https://tessdata.projectnaptha.com/4.0.0_best",logger:l=>{l.status!=="recognizing text"||typeof l.progress!="number"||this.isFinishOCR||($i(l.progress),l.progress===1&&(this.isFinishOCR=!0))}});yield s.load(),this.worker=s}finally{a(),$i(1)}}if(this.ocrEngine==="paddle"){let i=this.startFakeProgress(.85,6e4);try{let o=`https://${this.serverRegion==="china"?"storage.koodoreader.cn":"storage.koodoreader.com"}/paddleocr/models/${this.ocrLang}/${this.ocrLang}_dict.txt`,s=yield(yield fetch(o)).text();window.ort.env.wasm.wasmPaths="https://unpkg.com/onnxruntime-web@1.23.2/dist/",window.ort.env.wasm.proxy=!0;let l=yield window["esearch-ocr"].init({det:{input:`https://${this.serverRegion==="china"?"storage.koodoreader.cn":"storage.koodoreader.com"}/paddleocr/models/${this.ocrLang}/${this.ocrLang}_det.onnx`,ratio:.75},rec:{input:`https://${this.serverRegion==="china"?"storage.koodoreader.cn":"storage.koodoreader.com"}/paddleocr/models/${this.ocrLang}/${this.ocrLang}_rec.onnx`,decodeDic:s,on:(u,h,c)=>{if(this.shouldShowProgress&&c>0){let f=(u+1)/c;$i(f),f>=1&&(this.isFinishOCR=!0)}}},ort:window.ort,ortOption:{executionProviders:[{name:"webgpu"},{name:"wasm"}]}});this.worker=l}finally{i(),$i(1)}}this.ocrEngine!=="official-ai-ocr"&&this.ocrEngine!=="system-ocr"||(this.worker=this.externalWorker)}catch(t){throw console.error(t),t}var e})}preCache(){return F(this,void 0,void 0,function*(){return this.book||(yield this.parse()),yield ei(this.book)})}getMetadata(){return F(this,void 0,void 0,function*(){try{return this.book||(yield this.parse()),yield new qt(this.book).getMetadata()}catch(e){throw console.error(e),e}})}},$c=(r,e=!1,t="",n)=>{let i=new DOMParser().parseFromString(e?kp(r,t,n):r,"text/html"),o=dk(i);o.length===0&&(o=xk(i));for(let h=0;h<o.length;h++){var a=document.createElement("kookitmarker"),s=document.createTextNode(" ");a.appendChild(s),o[h].parentNode&&o[h].parentNode.insertBefore(a,o[h])}let l=pk(i.body.innerHTML),u={getCover:()=>""};return u.sections=l.map(h=>({id:h.index,load:()=>{return c=h.index,F(void 0,void 0,void 0,function*(){return URL.createObjectURL(new Blob([l[c].text],{type:"text/html"}))});var c},unload:()=>{h.index},size:l[h.index].text.length})),u.toc=l.map(h=>({label:h.label,href:"title"+h.index})).filter(h=>h.label!==""),u.rendition={layout:"pre-paginated"},u.resolveHref=h=>({index:parseInt(h.substring(5,h.length))}),u.resolveHrefIndex=h=>({index:parseInt(h.substring(5,h.length))}),u.splitTOCHref=h=>[h,null],u.getTOCFragment=h=>h.documentElement,u},dk=r=>Array.from(r.querySelectorAll("h1,title")),pk=r=>{let e=[],t=r.split("<kookitmarker> </kookitmarker>").filter(i=>i.trim()!==""),n=t.map(i=>gk(i)||mk(i));return e=t.map((i,o)=>({index:o,label:n[o],text:i,href:"title"+o})),e},gk=r=>{var e;let t=new DOMParser().parseFromString(r,"text/html").querySelector("h1");return t&&((e=t.textContent)===null||e===void 0?void 0:e.trim())||""},mk=r=>{var e;let t=new DOMParser().parseFromString(r,"text/html").querySelector("title");return t&&((e=t.textContent)===null||e===void 0?void 0:e.trim())||""},xk=r=>{let e=r.getElementsByTagName("*"),t=Array.from(e).filter(i=>i.childNodes.length===1&&i.childNodes[0].nodeType===Node.TEXT_NODE&&Sp(i.textContent)),n=[];for(let i=0;i<t.length;i++){let o=t[i],a=document.createElement("h1");a.innerHTML=o.innerText,o.parentNode.replaceChild(a,o),n.push(a)}return n},Ag=class extends Nr{constructor(e,t){super(Object.assign(Object.assign({},t),{format:"TXT"})),this.txtBuffer=e,this.charset=t.charset,this.parserRegex=t.parserRegex}renderTo(e,t){return new Promise((n,i)=>F(this,void 0,void 0,function*(){this.element=e,this.book||(yield this.parse(t));let o=new qt(this.book);this.chapterList=yield o.getChapter(this.book.toc),this.chapterDocList=yield o.getChapterDoc(),sn(e,this.isAllowScript);let a=this.getDocument();a&&(Zn(e,this.readerMode,a),n())}))}parse(e){return F(this,void 0,void 0,function*(){try{let t=new TextDecoder(this.charset),n=new Uint8Array(this.txtBuffer),i=t.decode(n);this.book=$c(i,!0,this.parserRegex,e)}catch(t){throw console.error(t),t}})}refreshContent(){return F(this,void 0,void 0,function*(){yield this.parse({refresh:!0});let e=new qt(this.book);return this.chapterList=yield e.getChapter(this.book.toc),this.chapterDocList=yield e.getChapterDoc(),yield this.record(),this.chapterList})}preCache(){return F(this,void 0,void 0,function*(){return this.book||(yield this.parse({refresh:!0})),yield ei(this.book)})}getMetadata(e){return F(this,void 0,void 0,function*(){try{let n=e.byteLength,i=Math.min(n,4096),o=new Uint8Array(e,0,i),a=Dw.default.detect(o)||"utf8";return this.charset=a,{charset:a}}catch(t){return console.error("Error detecting charset:",t),this.charset="utf8",{charset:"utf8"}}})}},ra=({entries:r,loadBlob:e,getSize:t},n)=>{let i=new Map,o=new Map,a=[".jpg",".jpeg",".png",".gif",".webp",".svg",".bmp",".tif",".tiff",".jfif",".jpe",".heic"],s=r.map(u=>u.filename).filter(u=>a.some(h=>u.endsWith(h))).sort((u,h)=>u.localeCompare(h,void 0,{numeric:!0,sensitivity:"base"})),l={getCover:()=>e(s[0])};return l.metadata={title:n.name},l.sections=s.map((u,h)=>({id:u,load:()=>(async c=>{if(i.has(c))return i.get(c);let f=URL.createObjectURL(await e(c)),d=URL.createObjectURL(new Blob([`<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; overflow:hidden;"><img src="${f}" style="max-width:100%; max-height:100%; object-fit:contain;"></div>`],{type:"text/html"}));return o.set(c,[f,d]),i.set(c,d),d})(u),unload:()=>(c=>{o.get(c)?.forEach?.(f=>URL.revokeObjectURL(f)),o.delete(c),i.delete(c)})(u),size:t(u)})),l.toc=s.map((u,h)=>({label:u.split("/").pop()||u,href:u})),l.rendition={layout:"pre-paginated"},l.resolveHref=u=>({index:l.sections.findIndex(h=>h.id===u)}),l.resolveHrefIndex=u=>({index:l.sections.findIndex(h=>h.id===u)}),l.splitTOCHref=u=>[u,null],l.getTOCFragment=u=>u.documentElement,l},vg=class extends Nr{constructor(e,t){super(t),this.scrollComicInterval=null,this.comicBuffer=e,this.readerMode=t.readerMode,this.format=t.format,this.chapterList=[],this.chapterDocList=[],this.book="",this.element="",this.rpc,this.getTarBuffer=t.getTarBuffer,this.getZipBuffer=t.getZipBuffer,this.getTarEntries=t.getTarEntries,this.getZipEntries=t.getZipEntries,this.filePath=t.filePath}renderTo(e){return new Promise((t,n)=>F(this,void 0,void 0,function*(){if(this.element=e,!this.book)try{yield this.parse()}catch(s){return console.error(s),void n(s)}let i=new qt(this.book);this.chapterList=yield i.getChapter(this.book.toc),this.chapterDocList=yield i.getChapterDoc(),sn(e,this.isAllowScript);let o=this.getDocument();if(!o)return;yield this.createComicContainer(o);let a=null;this.readerMode==="scroll"?this.element.addEventListener("scroll",s=>{a&&clearTimeout(a),a=setTimeout(()=>F(this,void 0,void 0,function*(){yield this.handleComicScrollEvent(o),yield this.record()}),100)}):o.addEventListener("scroll",s=>{a&&clearTimeout(a),a=setTimeout(()=>F(this,void 0,void 0,function*(){yield this.handleComicScrollEvent(o),yield this.record()}),200)}),eb(0,this.readerMode,o),t()}))}createComicContainer(e){return F(this,void 0,void 0,function*(){let t=e.createDocumentFragment(),n=yield this.getTemplateAspectRatio();for(let i=0;i<this.chapterDocList.length;i++){let o=e.createElement("div");o.style.position="relative",o.style.width="100%",o.id="pdf-container-"+i,o.className="pdf-container",this.readerMode==="single"?o.style.paddingTop=this.element.clientHeight+"px":(o.style.paddingTop=1/n*100+"%",o.style.marginBottom="2%",o.style.overflow="hidden"),this.readerMode==="double"&&(o.style.breakInside="avoid"),t.appendChild(o)}if((e.body||e.documentElement).appendChild(t),this.readerMode==="scroll"){let i=this.getIframe();i&&(i.height=e.body.scrollHeight+300+"px")}})}getTemplateAspectRatio(){return F(this,void 0,void 0,function*(){let e=Math.min(3,this.chapterDocList.length),t=[];for(let a=0;a<e;a++)try{let s=yield this.book.sections[a].load(),l=yield fetch(s),u=yield l.blob(),h=yield this.getImageMeta(u);h.width&&h.height&&t.push(Math.round(h.width/h.height*1e3)/1e3)}catch(s){console.error(s)}if(t.length===0)return .75;let n=new Map;t.forEach(a=>{n.set(a,(n.get(a)||0)+1)});let i=t[0],o=0;return n.forEach((a,s)=>{a>o&&(o=a,i=s)}),i})}getImageMeta(e){return F(this,void 0,void 0,function*(){let t=URL.createObjectURL(e),n=new Image;n.src=t;try{yield n.decode()}catch(a){console.error(a)}let{naturalWidth:i,naturalHeight:o}=n;return URL.revokeObjectURL(t),{width:i,height:o}})}handleComicScrollEvent(e){return F(this,void 0,void 0,function*(){let t=e.querySelectorAll(".pdf-container");for(let n=0;n<t.length;n++){let i=t[n],o=i.getAttribute("id");if(!o)continue;let a=parseInt(o.split("-").reverse()[0]);la(this.element,i,this.readerMode,e)&&(yield this.renderComicPage(a))}})}parse(){return F(this,void 0,void 0,function*(){try{if($s()){if(this.format==="CBZ"){let i=yield this.makeZipStreamLoader(this.filePath);return void(this.book=ra(i,{name:this.filePath}))}if(this.format==="CBT"){let i=yield this.makeTarStreamLoader(this.filePath);return void(this.book=ra(i,{name:this.filePath}))}}let e=new Blob([this.comicBuffer]),t=new File([e],"book."+this.format.toLocaleLowerCase(),{lastModified:new Date().getTime(),type:e.type}),n=this.detectArchiveType();if(n==="zip"||n==="cbz"){let i=yield this.makeZipLoader(t);this.book=ra(i,t)}else if(n==="tar"||n==="cbt"){let i=yield this.makeTarLoader();this.book=ra(i,t)}else if(n==="rar"||n==="cbr"){this.rpc=yield window.RPC.new("./lib/libunrar/worker.js",{loaded:function(){console.info("loaded")},progressShow:function(o,a,s){console.info(s)}}),yield new Promise(o=>setTimeout(o,200));let i=yield this.makeRarLoader();this.book=ra(i,t)}else if(n==="7z"||n==="cb7"){let i=yield this.make7zLoader();this.book=ra(i,t)}}catch(e){throw console.error(e),e}})}detectArchiveType(){let e=new Uint8Array(this.comicBuffer);if(e.length<4)return this.format.toLocaleLowerCase();if(e[0]===80&&e[1]===75){let t=[e[2],e[3]];if(t[0]===3&&t[1]===4||t[0]===5&&t[1]===6||t[0]===7&&t[1]===8)return"zip"}return e[0]===82&&e[1]===97&&e[2]===114&&e[3]===33?"rar":e[0]===55&&e[1]===122&&e[2]===188&&e[3]===175?"7z":this.comicBuffer.byteLength>=265&&new TextDecoder("utf8").decode(new Uint8Array(this.comicBuffer,257,5))==="ustar"?"tar":this.format.toLocaleLowerCase()}preCache(){return F(this,void 0,void 0,function*(){return this.book||(yield this.parse()),yield ei(this.book)})}makeZipStreamLoader(e){return F(this,void 0,void 0,function*(){let t=yield this.getZipEntries(e);return{entries:t.map(n=>({filename:n.fileName})),loadText:n=>F(this,void 0,void 0,function*(){let i=t.find(o=>o.fileName===n);return i?i.fileName:""}),loadBlob:n=>F(this,void 0,void 0,function*(){let i=t.find(o=>o.fileName===n);if(i){let o=yield this.getZipBuffer(i.entryPath,e);return new Blob([o])}return new Blob([new ArrayBuffer(0)])}),getSize:n=>{let i=t.find(o=>o.fileName===n);if(i)return i.size||1}}})}makeTarStreamLoader(e){return F(this,void 0,void 0,function*(){let t=yield this.getTarEntries(e);return{entries:t.map(n=>({filename:n.fileName})),loadText:n=>F(this,void 0,void 0,function*(){let i=t.find(o=>o.fileName===n);return i?i.fileName:""}),loadBlob:n=>F(this,void 0,void 0,function*(){let i=t.find(o=>o.fileName===n);if(i){let o=yield this.getTarBuffer(i.entryPath,e);return new Blob([o])}return new Blob([new ArrayBuffer(0)])}),getSize:n=>{let i=t.find(o=>o.fileName===n);if(i)return i.size||1}}})}makeZipLoader(e){return F(this,void 0,void 0,function*(){let t=yield Js.default.loadAsync(e),n=t.files;return{entries:Object.values(n).map(i=>({filename:i.name})),loadText:i=>F(this,void 0,void 0,function*(){let o=t.file(i);return o?o.async("string"):""}),loadBlob:i=>F(this,void 0,void 0,function*(){let o=t.file(i);if(o){let a=yield o.async("arraybuffer");return new Blob([a])}return new Blob([new ArrayBuffer(0)])}),getSize:i=>{let o=t.file(i);if(o)return o._data.uncompressedSize||1}}})}makeTarLoader(){return F(this,void 0,void 0,function*(){let e=yield(0,kw.default)(this.comicBuffer),t=new Map(e.map(a=>[a.name,a])),n=a=>(s,...l)=>t.has(s)?a(t.get(s),...l):null,i=n(a=>a.readAsString()),o=n((a,s)=>a.blob);return{entries:e.map(a=>({filename:a.name})),loadText:i,loadBlob:o,getSize:a=>{var s,l;return(l=(s=t.get(a))===null||s===void 0?void 0:s.size)!==null&&l!==void 0?l:1}}})}makeRarLoader(){return F(this,void 0,void 0,function*(){return new Promise((e,t)=>{var n=[this.comicBuffer],i=[{name:"book.rar",content:this.comicBuffer}];this.rpc.transferables=n,this.rpc.unrar(i,null,0).then(o=>{let a=this.getRarEntries(o.ls),s=new Map(Object.values(a).map(c=>[c.fullFileName,c])),l=c=>(f,...d)=>s.has(f)?c(s.get(f),...d):null,u=l(c=>c.fullFileName),h=l((c,f)=>new Blob([c.fileContent]));e({entries:Object.values(a).map(c=>({filename:c.fullFileName})),loadText:u,loadBlob:h,getSize:c=>{var f,d;return(d=(f=s.get(c))===null||f===void 0?void 0:f.fileSize)!==null&&d!==void 0?d:1}})}).catch(o=>{console.error(o),t(o)})})})}make7zLoader(){return F(this,void 0,void 0,function*(){if(!window.wasmBinary){let h=yield fetch("./lib/7z-wasm/7zz.wasm",{credentials:"same-origin"});if(!h.ok)throw"failed to load wasm binary file at './lib/7z-wasm/7zz.wasm'";window.wasmBinary=yield h.arrayBuffer()}let e=yield window.SevenZip({wasmBinary:window.wasmBinary}),t=new Uint8Array(this.comicBuffer),n=e.FS.open("archive.cb7","w+");e.FS.write(n,t,0,t.length),e.FS.close(n),e.callMain(["x","archive.cb7"]);let i=e.FS,o=this.get7zEntries(i.lookupPath("/").node),a=new Map(o.map(h=>[h.name,h])),s=h=>(c,...f)=>a.has(c)?h(a.get(c),...f):null,l=s(h=>h.name),u=s((h,c)=>new Blob([h.buffer]));return{entries:o.map(h=>({filename:h.name})),loadText:l,loadBlob:u,getSize:h=>{var c,f;return(f=(c=a.get(h))===null||c===void 0?void 0:c.size)!==null&&f!==void 0?f:1}}})}getRarEntries(e){let t=Object.keys(e),n=[];for(let i=0;i<t.length;i++){let o=t[i];e[o].type==="dir"?n=n.concat(this.getRarEntries(e[o].ls)):n.push({fullFileName:o,fileContent:e[o].fileContent,fileSize:e[o].fileSize})}return n}get7zEntries(e){let t=e.contents,n=Object.keys(t).filter(o=>o!="archive.cb7"&&o!="dev"&&o!="home"&&o!="proc"&&o!="tmp"),i=[];for(let o=0;o<n.length;o++){let a=n[o];t[a].isFolder?i=i.concat(this.get7zEntries(t[a])):i.push({name:a,buffer:t[a].contents,size:t[a].usedBytes})}return i}getSubDocument(e){let t=this.getDocument();if(!t)return null;let n=t.getElementById("pdf-iframe-"+e);return n||(sa(e||0,t),n=t.getElementById("pdf-iframe-"+e)),n?.contentDocument}getSubIframe(e){let t=this.getDocument();if(!t)return null;let n=t.getElementById("pdf-iframe-"+e);return n||(sa(e||0,t),n=t.getElementById("pdf-iframe-"+e)),n}handleRenderComicChapter(e){return F(this,void 0,void 0,function*(){if(e>=this.chapterDocList.length||e<0)return;let t=this.getDocument();if(!t)return;let n=t.getElementById("pdf-iframe-"+e);n||(n=sa(e,t));let i=n?.contentDocument;if(!i||i.body.innerHTML)return;let o=yield this.chapterDocList[e].text.load(),a=yield fetch(o),s=yield a.text();i.body.innerHTML=s,i.body.style.margin="0",i.body.style.height="100%",i.documentElement.style.height="100%",this.trigger("rendered",[e])})}handleUnloadComicChapter(e){return F(this,void 0,void 0,function*(){if(e>=this.chapterDocList.length||e<0)return;let t=this.getSubDocument(e);t&&t.body.innerHTML===""||(yield this.chapterDocList[e].text.unload(),t&&(t.body.innerHTML=""))})}renderComicPage(e){return F(this,void 0,void 0,function*(){e>=this.chapterDocList.length||e<0||(e>3&&(yield this.handleUnloadComicChapter(e-4)),yield this.handleRenderComicChapter(e),this.handleRenderComicChapter(e+1),this.platform!=="ios"&&(this.handleRenderComicChapter(e+2),this.handleRenderComicChapter(e+3)))})}goToChapterIndex(e){return F(this,void 0,void 0,function*(){this.chapterDocList.length>0&&(yield this.goToChapter(e,this.chapterDocList[e].href,this.chapterDocList[e].label))})}goToChapter(e,t,n){return F(this,void 0,void 0,function*(){this.readerMode==="double"&&e%2==1&&e--;let i=this.getDocument(),o=this.getIframe();i&&o&&(yield this.renderComicPage(e),yield Us(parseInt(e),this.readerMode,i),yield this.recordByChapter(e))})}getPositionByChapter(e){return{percentage:e/this.chapterDocList.length,chapterDocIndex:e+"",chapterHref:this.chapterDocList[e].href,chapterTitle:this.chapterDocList[e].label,text:""}}goToPercentage(e){return F(this,void 0,void 0,function*(){if(this.chapterDocList.length>0){let t=e===1?this.chapterDocList.length-1:Math.floor(this.chapterDocList.length*e);yield this.goToChapter(t,this.chapterDocList[t].href,this.chapterDocList[t].label)}})}goToPosition(e){return F(this,void 0,void 0,function*(){let t=this.getDocument(),n=this.getIframe();if(!t||!n)return;let i=JSON.parse(e);i.chapterDocIndex===void 0&&(i.chapterDocIndex=0),this.tempLocation={text:i.text,chapterTitle:i.chapterTitle,chapterDocIndex:i.chapterDocIndex,chapterHref:i.chapterHref,count:i.count,page:i.page,percentage:i.percentage};let{chapterDocIndex:o}=i;this.readerMode==="double"&&o%2==1&&o--,yield this.renderComicPage(parseInt(o)),this.readerMode==="scroll"&&(n.height=t.body.scrollHeight+"px",n.height=t.body.scrollHeight+300+"px"),yield Us(parseInt(o),this.readerMode,t),yield this.recordByChapter(parseInt(o)),this.addPageAnimation()})}waitForScrollEnd(e=500){return new Promise(t=>{let n=this.element,i=n.scrollTop,o=0,a=Date.now(),s=setInterval(()=>{if(Date.now()-a>e||n.scrollTop===i){if(o++,o>=2||Date.now()-a>e)return clearInterval(s),void t()}else o=0;i=n.scrollTop},50)})}prev(e){return F(this,void 0,void 0,function*(){let t=this.getDocument(),n=this.getIframe();t&&n&&(this.readerMode==="scroll"?(this.element.scrollBy({left:0,top:-(this.element.clientHeight-50),behavior:"smooth"}),yield this.waitForScrollEnd()):(e==="ios"?yield Pc(this.element,this.animation,1,t,this.flipToNextPage,this.flipToPrevPage,this.isMobile,parseInt(this.tempLocation.chapterDocIndex||"0"),this.readerMode):yield ha(this.element,this.animation,1,t,this.flipToNextPage,this.flipToPrevPage,this.isMobile),yield this.renderComicPage(parseInt(this.tempLocation.chapterDocIndex)-(this.readerMode==="double"?2:1))),yield this.record())})}next(e){return F(this,void 0,void 0,function*(){let t=this.getDocument(),n=this.getIframe();t&&n&&(this.readerMode==="scroll"?(this.element.scrollBy({left:0,top:this.element.clientHeight-50,behavior:"smooth"}),yield this.waitForScrollEnd()):(e==="ios"?yield Pc(this.element,this.animation,-1,t,this.flipToNextPage,this.flipToPrevPage,this.isMobile,parseInt(this.tempLocation.chapterDocIndex||"0"),this.readerMode):yield ha(this.element,this.animation,-1,t,this.flipToNextPage,this.flipToPrevPage,this.isMobile),yield this.renderComicPage(parseInt(this.tempLocation.chapterDocIndex)+(this.readerMode==="double"?2:1))),yield this.record())})}goToNeighborChapter(e){return F(this,void 0,void 0,function*(){let t=this.getDocument();if(!t)return;let n=parseInt(this.tempLocation.chapterDocIndex||"0");isNaN(n)&&(n=0);let i=this.readerMode==="double"?2:1,o=n+e*i;this.readerMode==="double"&&o%2==1&&o--,this.readerMode==="double"&&o>this.chapterDocList.length-1&&(o=this.chapterDocList.length-1,o%2==1&&o--),o<0||o>this.chapterDocList.length-1||o===n||(yield this.renderComicPage(o),yield Us(o,this.readerMode,t),this.handleComicRecordByIndex(o))})}prevChapter(){return F(this,void 0,void 0,function*(){this.readerMode!=="scroll"?yield this.prev():yield this.goToNeighborChapter(-1)})}nextChapter(){return F(this,void 0,void 0,function*(){this.readerMode!=="scroll"?yield this.next():yield this.goToNeighborChapter(1)})}goToPage(e){return F(this,void 0,void 0,function*(){let t=Math.floor(e-1);t>=this.chapterDocList.length&&(t=this.chapterDocList.length-1),t<0&&(t=0),yield this.goToChapter(t,this.chapterDocList[t].href,this.chapterDocList[t].label)})}record(){return F(this,void 0,void 0,function*(){this.animation!=="none"&&this.isMobile!=="yes"&&(yield new Promise(t=>setTimeout(t,1e3)));let e=this.getDocument();e&&(yield this.handleComicRecord(e))})}recordByChapter(e){return F(this,void 0,void 0,function*(){this.animation!=="none"&&this.isMobile!=="yes"&&(yield new Promise(t=>setTimeout(t,1e3))),e>=this.chapterDocList.length||e<0||this.handleComicRecordByIndex(e)})}handleComicRecordByIndex(e){e!==parseInt(this.tempLocation.chapterDocIndex)&&(this.tempLocation.chapterDocIndex=e+"",this.tempLocation.percentage=this.chapterDocList.length===1?"1":e/(this.chapterDocList.length-1)+"",this.tempLocation.chapterHref=this.chapterDocList[e].href,this.tempLocation.chapterTitle=this.chapterDocList[e].label,this.tempLocation.text="",this.trigger("page-changed"))}handleComicRecord(e){return F(this,void 0,void 0,function*(){let t=e.querySelectorAll(".pdf-container");if(t.length>0&&la(this.element,t[t.length-1],this.readerMode,e))this.handleComicRecordByContainer(t[t.length-1]);else for(let n=0;n<t.length;n++){let i=t[n];if(la(this.element,i,this.readerMode,e)){this.handleComicRecordByContainer(i);break}}})}handleComicRecordByContainer(e){let t=e.getAttribute("id");if(!t)return;let n=parseInt(t.split("-").reverse()[0]);this.handleComicRecordByIndex(n)}getProgress(){return{totalPage:this.chapterDocList.length,currentPage:parseInt(this.tempLocation.chapterDocIndex||"0")+1}}getPageSize(){let e=this.getDocument();if(!e)return;let t=this.readerMode==="double"?2:1,n=Math.floor(e.body.clientWidth/12),i=n%2==0?n:n-1,o=e.querySelectorAll("iframe")[0],a=o?.getBoundingClientRect().height;return{width:e.body.clientWidth,height:this.element.clientHeight,sectionWidth:(e.body.clientWidth-i)/t,sectionHeight:a,gap:i}}visibleText(){return F(this,void 0,void 0,function*(){return[]})}audioText(){return F(this,void 0,void 0,function*(){return yield this.visibleText()})}getRestAudioText(e){return F(this,void 0,void 0,function*(){return[]})}chapterText(){return F(this,void 0,void 0,function*(){return""})}doSearch(e){return F(this,void 0,void 0,function*(){return[]})}getImageList(e){return F(this,void 0,void 0,function*(){if(e==null||e<0||e>this.chapterDocList.length-1){if(e!=null)return[];if(e=parseInt(this.tempLocation.chapterDocIndex||"0"),isNaN(e)&&(e=0),e<0||e>this.chapterDocList.length-1)return[]}let t=this.readerMode==="double"&&e%2==0?[e,e+1]:[e],n=[];for(let i of t){let o=yield this.getComicImageUrl(i);o&&n.push(o)}return n})}getComicImageUrl(e){return F(this,void 0,void 0,function*(){let t=this.getSubDocument(e);if(!t||!t.querySelector("img")&&(yield this.handleRenderComicChapter(e),t=this.getSubDocument(e),!t))return"";let n=t.querySelector("img");return n&&n.src?n.src:""})}getMetadata(){return F(this,void 0,void 0,function*(){return new Promise((e,t)=>F(this,void 0,void 0,function*(){try{this.book||(yield this.parse());let i=yield this.book.getCover();var n=new FileReader;n.readAsDataURL(i),n.onloadend=()=>{e({cover:n.result})}}catch(i){console.error(i),t(i)}}))})}},_b=r=>r?.trim()?.replace(/\s{2,}/g," "),tn=r=>_b(r?.textContent),Lc={XLINK:"http://www.w3.org/1999/xlink",EPUB:"http://www.idpf.org/2007/ops"},Bw="application/xml",Iw="application/xhtml+xml",vn={strong:["strong","self"],emphasis:["em","self"],style:["span","self"],a:"anchor",strikethrough:["s","self"],sub:["sub","self"],sup:["sup","self"],code:["code","self"],image:"image"},Mb={epigraph:["blockquote"],subtitle:["h2",vn],"text-author":["p",vn],date:["p",vn],stanza:"stanza"},Xc={title:["header",{p:["h1",vn],"empty-line":["br"]}],epigraph:["blockquote","self"],image:"image",annotation:["aside"],section:["section","self"],p:["p",vn],poem:["blockquote",Mb],subtitle:["h2",vn],cite:["blockquote","self"],"empty-line":["br"],table:["table",{tr:["tr",["align"]],th:["th",["colspan","rowspan","align","valign"]],td:["td",["colspan","rowspan","align","valign"]]}],"text-author":["p",vn]};Mb.epigraph.push(Xc);Ak={image:"image",title:["section",{p:["h1",vn],"empty-line":["br"]}],epigraph:["section",Xc],section:["section",Xc]},Nb=r=>{let e=r.getAttributeNS(Lc.XLINK,"href"),[,t]=e.split("#"),n=r.getRootNode().getElementById(t);return n?`data:${n.getAttribute("content-type")};base64,${n.textContent}`:e},yg=class{constructor(e){this.fb2=e,this.doc=document.implementation.createDocument(Lc.XHTML,"html")}image(e){let t=this.doc.createElement("img");return t.alt=e.getAttribute("alt"),t.title=e.getAttribute("title"),t.setAttribute("src",Nb(e)),t}anchor(e){let t=this.convert(e,{a:["a",vn]});return t.setAttribute("href",e.getAttributeNS(Lc.XLINK,"href")),e.getAttribute("type")==="note"&&t.setAttributeNS(Lc.EPUB,"epub:type","noteref"),t}stanza(e){let t=this.convert(e,{stanza:["p",{title:["header",{p:["strong",vn],"empty-line":["br"]}],subtitle:["p",vn]}]});for(let n of e.children)n.nodeName==="v"&&(t.append(this.doc.createTextNode(n.textContent)),t.append(this.doc.createElement("br")));return t}convert(e,t){if(e.nodeType===3)return this.doc.createTextNode(e.textContent);if(e.nodeType===4)return this.doc.createCDATASection(e.textContent);if(e.nodeType===8)return this.doc.createComment(e.textContent);let n=t?.[e.nodeName];if(!n)return null;if(typeof n=="string")return this[n](e);let[i,o]=n,a=this.doc.createElement(i);if(e.id&&(a.id=e.id),a.classList.add(e.nodeName),Array.isArray(o))for(let u of o)a.setAttribute(u,e.getAttribute(u));let s=o==="self"?t:Array.isArray(o)?null:o,l=e.firstChild;for(;l;){let u=this.convert(l,s);u&&a.append(u),l=l.nextSibling}return a}},vk=URL.createObjectURL(new Blob([`
 @namespace epub "http://www.idpf.org/2007/ops";
@@ -6053,5 +6069,203 @@ mhtml2html/dist/mhtml2html.js:
 
 </script>
 <!-- kookit-inline:end -->
+<script>
+/* ==================== 阅读增强补丁：字号/行距 · 书签 · 阅读时长 ==================== */
+(function(){
+  "use strict";
+  const $ = id => document.getElementById(id);
+
+  /* ---------- ① 字号 / 行距调节 ----------
+     原版 paintPage 用 LINES(行数) 与 CHARS(每行宽) 计算字号。
+     这里引入 fontSizeK / lineK 两个系数，通过包装 paintPage 前置
+     修改这两个常量不行（const），改为包装 paintPage：按比例改写
+     传入的 W/H 是不行的……正确做法：LINES/CHARS 是 const，
+     但 paintPage 内部读的是闭包。用一个可变的影子对象 + 包装
+     layout/paintPage 不现实。
+     最小侵入方案：调「页面缩放」之外再调「字号缩放」——直接包装
+     drawRichLine 与 paintPage 的字号来源不可行。
+     改用真正可行的方案：整页 CSS zoom 已有（VIEW.z）。
+     这里做的是「重排版字号」：修改 book.lines 的渲染密度——
+     包装 paginate 太深。
+     ✅ 最终方案：利用原版 paintPage 的 fs 计算式
+        fs = min((W-padX*2)/(CHARS*0.95), lh*0.92)
+     把 CHARS 视为可调：CHARS 越小字号越大。CHARS 是 const 但
+     我们可以包装 paintPage：在调用前临时覆盖不行。
+     ✅✅ 真正最小侵入：直接改原版常量的声明值为 let，并暴露
+        window.setTypeK —— 需要 edit 原版两行（LINES/CHARS）。
+     此补丁假设这两行已由 const 改为 let（见 index.html 变更）。 */
+  window.setType = function(lines, chars){
+    try{
+      if(typeof lines === "number" && lines >= 10 && lines <= 40) LINES = Math.round(lines);
+      if(typeof chars === "number" && chars >= 12 && chars <= 40) CHARS = Math.round(chars);
+      try{ localStorage.setItem("kookit.type", JSON.stringify({ lines: LINES, chars: CHARS })); }catch(_){}
+      layout(); buildCmap(); draw();
+      return { lines: LINES, chars: CHARS };
+    }catch(e){ return { error: e.message }; }
+  };
+  window.getType = function(){ try { return JSON.parse(localStorage.getItem("kookit.type") || "null"); } catch(_){ return null; } };
+  // 启动时恢复
+  try{
+    const saved = JSON.parse(localStorage.getItem("kookit.type") || "null");
+    if(saved){ if(saved.lines) LINES = saved.lines; if(saved.chars) CHARS = saved.chars; }
+  }catch(_){}
+
+  /* ---------- ② 书签闭环 ---------- */
+  const bmKey = () => "kookit.bm." + (book.title || "unknown");
+  window.bookmarkAdd = function(note){
+    try{
+      const list = JSON.parse(localStorage.getItem(bmKey()) || "[]");
+      const page = state.sheet * 2 + 1;
+      if(list.some(b => b.page === page)) return { ok: false, why: "此页已有书签" };
+      list.push({ page, t: (book.chaps[chapterOf(page)] || {}).t || "", note: note || "", ts: Date.now() });
+      list.sort((a, b) => a.page - b.page);
+      localStorage.setItem(bmKey(), JSON.stringify(list));
+      window.renderBookmarks();
+      return { ok: true, count: list.length };
+    }catch(e){ return { ok: false, why: e.message }; }
+  };
+  window.bookmarkRemove = function(page){
+    try{
+      const list = JSON.parse(localStorage.getItem(bmKey()) || "[]").filter(b => b.page !== page);
+      localStorage.setItem(bmKey(), JSON.stringify(list));
+      window.renderBookmarks();
+      return { ok: true };
+    }catch(e){ return { ok: false, why: e.message }; }
+  };
+  window.bookmarkList = function(){
+    try { return JSON.parse(localStorage.getItem(bmKey()) || "[]"); } catch(_){ return []; }
+  };
+  window.renderBookmarks = function(){
+    const box = $("bmList");
+    if(!box) return;
+    const list = window.bookmarkList();
+    box.innerHTML = "";
+    if(!list.length){ box.innerHTML = '<div class="bm-empty">暂无书签</div>'; return; }
+    list.forEach(b => {
+      const row = document.createElement("div");
+      row.className = "bm-row" + (b.page === state.sheet * 2 + 1 ? " cur" : "");
+      const txt = document.createElement("span");
+      txt.className = "bm-txt";
+      txt.textContent = "第 " + b.page + " 页" + (b.note ? " · " + b.note : "");
+      txt.title = "跳到第 " + b.page + " 页";
+      txt.onclick = () => goToSheet(Math.round((b.page - 1) / 2));
+      const del = document.createElement("button");
+      del.className = "bm-del";
+      del.textContent = "✕";
+      del.title = "删除此书签";
+      del.onclick = (e) => { e.stopPropagation(); window.bookmarkRemove(b.page); };
+      row.appendChild(txt); row.appendChild(del);
+      box.appendChild(row);
+    });
+  }
+  // 换书时刷新书签面板
+  const _origLoad = loadBook;
+  if(typeof _origLoad === "function"){
+    window.loadBook = function(chapters, meta){
+      _origLoad(chapters, meta);
+      try { window.renderBookmarks(); } catch(_){}
+    };
+  }
+
+  /* ---------- ③ 阅读时长统计 ---------- */
+  const rk = () => "kookit.rt." + new Date().toISOString().slice(0, 10);
+  let readingSec = 0, lastTick = 0, visible = true;
+  document.addEventListener("visibilitychange", () => { visible = !document.hidden; });
+  setInterval(() => {
+    if(!visible) return;
+    if(document.hidden) return;
+    readingSec += 5;
+    try{
+      const cur = JSON.parse(localStorage.getItem(rk()) || "0");
+      localStorage.setItem(rk(), JSON.stringify(cur + 5));
+      // 累计（所有日期）
+      const allKey = "kookit.rt.all";
+      const all = JSON.parse(localStorage.getItem(allKey) || "0");
+      localStorage.setItem(allKey, JSON.stringify(all + 5));
+    }catch(_){}
+    window.updateReadingStats();
+  }, 5000);
+  function fmt(sec){
+    if(sec < 60) return sec + " 秒";
+    const m = Math.floor(sec / 60);
+    if(m < 60) return m + " 分钟";
+    return (m / 60).toFixed(1) + " 小时";
+  }
+  window.updateReadingStats = function(){
+    const el = $("readStats");
+    if(!el) return;
+    let today = 0, all = 0;
+    try{
+      today = JSON.parse(localStorage.getItem(rk()) || "0");
+      all = JSON.parse(localStorage.getItem("kookit.rt.all") || "0");
+    }catch(_){}
+    el.innerHTML = '<div class="rt-row"><span>今日</span><b>' + fmt(today) + '</b></div>' +
+                   '<div class="rt-row"><span>累计</span><b>' + fmt(all) + '</b></div>';
+  };
+
+  /* ---------- UI 注入 ---------- */
+  function injectUI(){ console.log(String.fromCharCode(73,78,74,69,67,84,45,83,84,65,82,84));
+    // 顶栏加「添加书签」按钮（导入文档旁）
+    const imp = $("btnImport");
+    if(imp && !$("btnBookmark")){
+      const b = document.createElement("button");
+      b.className = "btn"; b.id = "btnBookmark";
+      b.title = "为当前跨页添加书签";
+      b.textContent = "☆ 书签";
+      b.onclick = () => {
+        const r = window.bookmarkAdd();
+        setStatus(r.ok ? "已添加书签（第 " + (state.sheet * 2 + 1) + " 页）" : ("书签：" + r.why), r.ok ? "ok" : "");
+      };
+      imp.parentNode.insertBefore(b, imp);
+    }
+    // 侧栏加「字号/行距」面板（插到「左右厚度」面板前）
+    const thickPanel = [...document.querySelectorAll(".panel h3")].find(h => h.textContent.includes("左右厚度"));
+    if(thickPanel && !$("typePanel")){
+      const panel = document.createElement("div");
+      panel.className = "panel"; panel.id = "typePanel";
+      panel.innerHTML = '<h3>字号 / 行距 <em>实时重排</em></h3>' +
+        '<div class="body">' +
+        '<div class="row"><span class="k">行数（行距）</span><span class="v" id="typeLinesV">' + LINES + '</span></div>' +
+        '<input type="range" id="typeLines" min="14" max="36" step="1" value="' + LINES + '">' +
+        '<div class="row"><span class="k">每行字数（字号）</span><span class="v" id="typeCharsV">' + CHARS + '</span></div>' +
+        '<input type="range" id="typeChars" min="14" max="36" step="1" value="' + CHARS + '">' +
+        '<div class="note" style="margin-top:5px">行数越少字号越大；改动立即重排并保存。</div>' +
+        '</div>';
+      thickPanel.parentNode.insertBefore(panel, thickPanel);
+      const sl = $("typeLines"), sc = $("typeChars");
+      if(sl) sl.addEventListener("input", () => {
+        const r = setType(+sl.value, CHARS);
+        $("typeLinesV").textContent = r.lines;
+        if(window.setType) $("typeChars").value = CHARS;
+      });
+      if(sc) sc.addEventListener("input", () => {
+        const r = setType(LINES, +sc.value);
+        $("typeCharsV").textContent = r.chars;
+      });
+    }
+    // 侧栏加「书签」面板（插到字号面板后）
+    if(thickPanel && !$("bmPanel")){
+      const panel = document.createElement("div");
+      panel.className = "panel"; panel.id = "bmPanel";
+      panel.innerHTML = '<h3>书签 <em>点击跳转</em></h3>' +
+        '<div class="body"><div id="bmList" class="bm-list"></div></div>';
+      thickPanel.parentNode.insertBefore(panel, thickPanel);
+    }
+    // 侧栏加「阅读统计」面板
+    if(thickPanel && !$("rtPanel")){
+      const panel = document.createElement("div");
+      panel.className = "panel"; panel.id = "rtPanel";
+      panel.innerHTML = '<h3>阅读时长</h3><div class="body"><div id="readStats"></div></div>';
+      thickPanel.parentNode.insertBefore(panel, thickPanel);
+    }
+    window.renderBookmarks();
+    window.updateReadingStats();
+  } console.log(String.fromCharCode(73,78,74,69,67,84,45,68,79,78,69));
+
+  // 侧栏 DOM 可能晚于本补丁就绪 —— DOMContentLoaded 后注入，双保险
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", injectUI);
+  else injectUI();
+})();
+</script>
 </body>
 </html>

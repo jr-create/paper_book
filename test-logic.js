@@ -61,9 +61,13 @@ const windowStub = {
   fire(t, ev) { (winH[t] || []).forEach(f => f(ev)); }
 };
 const sandbox = {
-  document: { getElementById: el, createElement: () => el("t" + Math.random()) },
+  document: { getElementById: el, createElement: () => el("t" + Math.random()),
+    addEventListener() {}, readyState: "complete",
+    querySelectorAll() { return []; }, querySelector() { return null; },
+    hidden: false },
   window: windowStub,
   navigator: {}, performance: { now: () => NOW },
+  setInterval() {}, clearInterval() {},
   requestAnimationFrame: f => rafQueue.push(f),
   console, Math, Date, JSON, Array, Object, String, Number, Map, Set, Proxy,
   isNaN, parseInt, parseFloat, RegExp
